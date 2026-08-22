@@ -1,28 +1,119 @@
-# Angular specific
+##########################
+# .NET
+##########################
+
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Oo]ut/
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+# Visual Studio / Rider / VS Code
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.sln.docstates
+
+# .NET Core / .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.nuget.props
+*.nuget.targets
+*.nupkg
+*.snupkg
+[Ee]xpress/
+
+# Rider
+*.sln.iml
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+coverage*.info
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Publish / deploy
+[Pp]ublish/
+*.[Pp]ublish.xml
+*.azurePubxml
+*.pubxml
+*.pubxml.user
+*.publishproj
+
+# Secrets / user config
+appsettings.*.local.json
+appsettings.Development.json
+secrets.json
+*.env
+
+# NuGet
+*.nupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+.nuget/
+
+##########################
+# Angular / Node
+##########################
 /dist/
 /out-tsc/
 /tmp/
 /coverage/
 /e2e/test-output/
-/.angular/
 .angular/
-
-# Node modules and dependency files
-/node_modules/
-/package-lock.json
-/yarn.lock
-
-# Environment files
-/.env
-
-# Angular CLI and build artefacts
 /.angular-cli.json
 /.ng/
 
+# Node modules and dependency files
+/node_modules/
+node_modules/
+/package-lock.json
+/yarn.lock
+
 # TypeScript cache
 *.tsbuildinfo
+
+# Environment files
+/.env
+.env
+.env.local
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+
+##########################
+# OS / editor files
+##########################
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
