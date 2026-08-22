@@ -70,6 +70,7 @@ appsettings.*.local.json
 appsettings.Development.json
 secrets.json
 *.env
+TEST_USER_CREDENTIALS.md
 
 # NuGet
 *.nupkg

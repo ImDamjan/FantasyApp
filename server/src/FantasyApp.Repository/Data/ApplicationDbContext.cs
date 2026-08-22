@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FantasyApp.Repository.Data
 {
-    public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<long>, long>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
@@ -19,12 +19,12 @@ namespace FantasyApp.Repository.Data
             base.OnModelCreating(builder);
 
             builder.Entity<ApplicationUser>().ToTable("Users");
-            builder.Entity<IdentityRole<Guid>>().ToTable("Roles");
-            builder.Entity<IdentityUserRole<Guid>>().ToTable("UserRoles");
-            builder.Entity<IdentityUserClaim<Guid>>().ToTable("UserClaims");
-            builder.Entity<IdentityUserLogin<Guid>>().ToTable("UserLogins");
-            builder.Entity<IdentityUserToken<Guid>>().ToTable("UserTokens");
-            builder.Entity<IdentityRoleClaim<Guid>>().ToTable("RoleClaims");
+            builder.Entity<IdentityRole<long>>().ToTable("Roles");
+            builder.Entity<IdentityUserRole<long>>().ToTable("UserRoles");
+            builder.Entity<IdentityUserClaim<long>>().ToTable("UserClaims");
+            builder.Entity<IdentityUserLogin<long>>().ToTable("UserLogins");
+            builder.Entity<IdentityUserToken<long>>().ToTable("UserTokens");
+            builder.Entity<IdentityRoleClaim<long>>().ToTable("RoleClaims");
 
             builder.Entity<RefreshToken>(entity =>
             {
