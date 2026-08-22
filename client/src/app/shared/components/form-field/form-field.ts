@@ -22,13 +22,13 @@ export class FormField {
 
     const errors = this.control.errors;
 
-    if (errors['required']) return `Polje "${this.label}" je obavezno.`;
-    if (errors['email']) return 'Unesi ispravnu email adresu.';
+    if (errors['required']) return `${this.label} is required.`;
+    if (errors['email']) return 'Enter a valid email address.';
     if (errors['minlength']) {
-      return `Minimum ${errors['minlength'].requiredLength} karaktera.`;
+      return `Minimum ${errors['minlength'].requiredLength} characters.`;
     }
-    if (errors['mismatch']) return 'Lozinke se ne poklapaju.';
+    if (errors['mismatch']) return 'Passwords do not match.';
 
-    return 'Neispravna vrednost.';
+    return 'Invalid value.';
   }
 }

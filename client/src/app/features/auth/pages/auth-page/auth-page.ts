@@ -5,13 +5,14 @@ import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
 import { passwordMatchValidator } from '../../../../core/validators/password-match.validator';
 import { FormField } from '../../../../shared/components/form-field/form-field';
+import { Logo } from '../../../../shared/components/logo/logo';
 
 type AuthMode = 'login' | 'register';
 
 @Component({
   selector: 'app-auth-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, FormField],
+  imports: [ReactiveFormsModule, RouterLink, FormField, Logo],
   templateUrl: './auth-page.html',
   styleUrl: './auth-page.scss',
 })
@@ -63,7 +64,7 @@ export class AuthPage {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: () => this.router.navigate(['/']),
-        error: (err) => this.loginError.set(err?.error?.message ?? 'Prijava nije uspela.'),
+        error: (err) => this.loginError.set(err?.error?.message ?? 'Login failed.'),
       });
   }
 
@@ -81,7 +82,7 @@ export class AuthPage {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: () => this.router.navigate(['/']),
-        error: (err) => this.registerError.set(err?.error?.message ?? 'Registracija nije uspela.'),
+        error: (err) => this.registerError.set(err?.error?.message ?? 'Registration failed.'),
       });
   }
 }

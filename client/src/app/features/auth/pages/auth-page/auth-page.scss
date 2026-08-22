@@ -16,21 +16,10 @@
   border-radius: 18px;
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
   overflow: hidden;
-}
-
-.logo {
-  font-weight: 800;
-  font-size: 1.15rem;
-  letter-spacing: 0.04em;
-  margin-bottom: 1.5rem;
-
-  &__main {
-    color: var(--fa-purple);
-  }
-
-  &__accent {
-    color: var(--fa-green-dark);
-  }
+  /* Forces proper anti-aliased clipping of the rounded corners against the
+     sliding white/purple halves — without this, 1px seams appear at the
+     corners during/after the CSS transform transition. */
+  -webkit-mask-image: -webkit-radial-gradient(circle, #fff 100%, #000 100%);
 }
 
 .form-title {
@@ -191,14 +180,6 @@
 
   .overlay {
     transform: translateX(50%);
-  }
-
-  .overlay-panel--left {
-    transform: translateX(20%);
-  }
-
-  .overlay-panel--right {
-    transform: translateX(0);
   }
 }
 

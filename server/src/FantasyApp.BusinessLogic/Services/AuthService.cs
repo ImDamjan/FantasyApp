@@ -39,7 +39,7 @@ namespace FantasyApp.BusinessLogic.Services
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if (existingUser != null)
             {
-                return AuthResult<AuthResponseDto>.Failure("Korisnik sa ovim email-om već postoji.");
+                return AuthResult<AuthResponseDto>.Failure("A user with this email already exists.");
             }
 
             var user = new ApplicationUser
@@ -64,13 +64,13 @@ namespace FantasyApp.BusinessLogic.Services
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
-                return AuthResult<AuthResponseDto>.Failure("Pogrešan email ili lozinka.");
+                return AuthResult<AuthResponseDto>.Failure("Incorrect email or password.");
             }
 
             var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
             if (!passwordValid)
             {
-                return AuthResult<AuthResponseDto>.Failure("Pogrešan email ili lozinka.");
+                return AuthResult<AuthResponseDto>.Failure("Incorrect email or password.");
             }
 
             var authResponse = await IssueTokensAsync(user);
@@ -82,7 +82,7 @@ namespace FantasyApp.BusinessLogic.Services
             var existingToken = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken);
             if (existingToken == null || !existingToken.IsActive || existingToken.User == null)
             {
-                return AuthResult<AuthResponseDto>.Failure("Refresh token je nevažeći ili je istekao.");
+                return AuthResult<AuthResponseDto>.Failure("Refresh token is invalid or has expired.");
             }
 
             var (newRefreshTokenValue, newRefreshTokenExpiresAt) = _tokenService.GenerateRefreshToken();
@@ -122,7 +122,7 @@ namespace FantasyApp.BusinessLogic.Services
             var existingToken = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken);
             if (existingToken == null || !existingToken.IsActive)
             {
-                return AuthResult<bool>.Failure("Refresh token je nevažeći ili je već opozvan.");
+                return AuthResult<bool>.Failure("Refresh token is invalid or has already been revoked.");
             }
 
             existingToken.RevokedAt = DateTime.UtcNow;
@@ -144,13 +144,13 @@ namespace FantasyApp.BusinessLogic.Services
             var resetLink = $"{_appSettings.ClientUrl}/reset-password?email={Uri.EscapeDataString(request.Email)}&token={encodedToken}";
 
             var htmlBody = $"""
-                <p>Zdravo {user.UserName},</p>
-                <p>Zatražena je promena lozinke za tvoj FantasyApp nalog. Klikni na link ispod da postaviš novu lozinku:</p>
+                <p>Hi {user.UserName},</p>
+                <p>We received a request to reset the password for your Fantasy account. Click the link below to set a new password:</p>
                 <p><a href="{resetLink}">{resetLink}</a></p>
-                <p>Ako nisi ti zatražio ovu promenu, slobodno ignoriši ovaj email.</p>
+                <p>If you didn't request this, you can safely ignore this email.</p>
                 """;
 
-            await _emailSender.SendEmailAsync(request.Email, "Resetovanje lozinke - FantasyApp", htmlBody);
+            await _emailSender.SendEmailAsync(request.Email, "Reset your password - Fantasy", htmlBody);
         }
 
         public async Task<AuthResult<bool>> ResetPasswordAsync(ResetPasswordRequestDto request)
@@ -158,7 +158,7 @@ namespace FantasyApp.BusinessLogic.Services
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
-                return AuthResult<bool>.Failure("Nevažeći zahtev za reset lozinke.");
+                return AuthResult<bool>.Failure("Invalid password reset request.");
             }
 
             var result = await _userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);

@@ -5,11 +5,12 @@ import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
 import { passwordMatchValidator } from '../../../../core/validators/password-match.validator';
 import { FormField } from '../../../../shared/components/form-field/form-field';
+import { Logo } from '../../../../shared/components/logo/logo';
 
 @Component({
   selector: 'app-reset-password-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, FormField],
+  imports: [ReactiveFormsModule, RouterLink, FormField, Logo],
   templateUrl: './reset-password-page.html',
   styleUrl: './reset-password-page.scss',
 })
@@ -48,8 +49,7 @@ export class ResetPasswordPage {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: () => this.submitted.set(true),
-        error: (err) =>
-          this.errorMessage.set(err?.error?.message ?? 'Resetovanje lozinke nije uspelo.'),
+        error: (err) => this.errorMessage.set(err?.error?.message ?? 'Password reset failed.'),
       });
   }
 }

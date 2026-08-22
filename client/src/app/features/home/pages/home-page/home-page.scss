@@ -12,20 +12,6 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.logo {
-  font-weight: 800;
-  font-size: 1.1rem;
-  letter-spacing: 0.04em;
-
-  &__main {
-    color: var(--fa-purple);
-  }
-
-  &__accent {
-    color: var(--fa-green-dark);
-  }
-}
-
 .home-content {
   padding: 3rem 2rem;
   text-align: center;

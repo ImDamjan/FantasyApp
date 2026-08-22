@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
+import { Logo } from '../../../../shared/components/logo/logo';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [],
+  imports: [Logo],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })

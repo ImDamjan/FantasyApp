@@ -69,7 +69,7 @@ namespace FantasyApp.Api.Controllers
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request)
         {
             await _authService.ForgotPasswordAsync(request);
-            return Ok(new { message = "Ako nalog sa unetim email-om postoji, poslat je email za reset lozinke." });
+            return Ok(new { message = "If an account with that email exists, a password reset email has been sent." });
         }
 
         [HttpPost("reset-password")]

@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
 import { FormField } from '../../../../shared/components/form-field/form-field';
+import { Logo } from '../../../../shared/components/logo/logo';
 
 @Component({
   selector: 'app-forgot-password-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, FormField],
+  imports: [ReactiveFormsModule, RouterLink, FormField, Logo],
   templateUrl: './forgot-password-page.html',
   styleUrl: './forgot-password-page.scss',
 })
@@ -38,7 +39,7 @@ export class ForgotPasswordPage {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: () => this.submitted.set(true),
-        error: () => this.errorMessage.set('Nešto je pošlo naopako. Pokušaj ponovo.'),
+        error: () => this.errorMessage.set('Something went wrong. Please try again.'),
       });
   }
 }

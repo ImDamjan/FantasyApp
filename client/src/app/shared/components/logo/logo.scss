@@ -1,0 +1,54 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.logo__mark {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.logo__mane {
+  fill: var(--fa-green-dark);
+}
+
+.logo__face {
+  fill: var(--fa-purple);
+}
+
+.logo__eye {
+  fill: var(--fa-white);
+}
+
+.logo__muzzle {
+  fill: var(--fa-white);
+}
+
+.logo__text {
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  color: var(--fa-purple);
+}
+
+.logo--light {
+  .logo__mane {
+    fill: var(--fa-green);
+  }
+
+  .logo__face {
+    fill: var(--fa-white);
+  }
+
+  .logo__eye,
+  .logo__muzzle {
+    fill: var(--fa-purple);
+  }
+
+  .logo__text {
+    color: var(--fa-white);
+  }
+}
