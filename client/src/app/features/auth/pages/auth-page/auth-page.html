@@ -1,0 +1,108 @@
+<div class="auth-page">
+  <div class="auth-card" [class.auth-card--register]="mode() === 'register'">
+    <!-- Sign In -->
+    <div class="form-panel form-panel--login">
+      <form [formGroup]="loginForm" (ngSubmit)="onLogin()" novalidate>
+        <div class="logo">
+          <span class="logo__main">FANTASY</span><span class="logo__accent">LEAGUE</span>
+        </div>
+        <h1 class="form-title">Sign In</h1>
+
+        <app-form-field
+          [control]="loginForm.controls.email"
+          label="Email"
+          type="email"
+          placeholder="tvoj@email.com"
+          autocomplete="email"
+        />
+        <app-form-field
+          [control]="loginForm.controls.password"
+          label="Lozinka"
+          type="password"
+          placeholder="••••••••"
+          autocomplete="current-password"
+        />
+
+        <a class="forgot-link" routerLink="/auth/forgot-password">Zaboravljena lozinka?</a>
+
+        @if (loginError()) {
+          <p class="form-error">{{ loginError() }}</p>
+        }
+
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">Sign In</button>
+
+        <p class="mobile-switch">
+          Nemaš nalog?
+          <button type="button" class="link-btn" (click)="setMode('register')">Registruj se</button>
+        </p>
+      </form>
+    </div>
+
+    <!-- Sign Up -->
+    <div class="form-panel form-panel--register">
+      <form [formGroup]="registerForm" (ngSubmit)="onRegister()" novalidate>
+        <div class="logo">
+          <span class="logo__main">FANTASY</span><span class="logo__accent">LEAGUE</span>
+        </div>
+        <h1 class="form-title">Create Account</h1>
+
+        <app-form-field
+          [control]="registerForm.controls.email"
+          label="Email"
+          type="email"
+          placeholder="tvoj@email.com"
+          autocomplete="email"
+        />
+        <app-form-field
+          [control]="registerForm.controls.username"
+          label="Korisničko ime"
+          placeholder="npr. mm10"
+          autocomplete="username"
+        />
+        <app-form-field
+          [control]="registerForm.controls.password"
+          label="Lozinka"
+          type="password"
+          placeholder="••••••••"
+          autocomplete="new-password"
+        />
+        <app-form-field
+          [control]="registerForm.controls.confirmPassword"
+          label="Potvrdi lozinku"
+          type="password"
+          placeholder="••••••••"
+          autocomplete="new-password"
+        />
+
+        @if (registerError()) {
+          <p class="form-error">{{ registerError() }}</p>
+        }
+
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">Sign Up</button>
+
+        <p class="mobile-switch">
+          Već imaš nalog?
+          <button type="button" class="link-btn" (click)="setMode('login')">Prijavi se</button>
+        </p>
+      </form>
+    </div>
+
+    <!-- Overlay -->
+    <div class="overlay-container">
+      <div class="overlay">
+        <div class="overlay-panel overlay-panel--left">
+          <h2>Dobrodošao nazad!</h2>
+          <p>Prijavi se da nastaviš da vodiš svoj tim.</p>
+          <button type="button" class="btn btn-outline" (click)="setMode('login')">Sign In</button>
+        </div>
+        <div class="overlay-panel overlay-panel--right">
+          <h2>Nov si ovde?</h2>
+          <p>Napravi nalog i sastavi svoj tim iz snova.</p>
+          <button type="button" class="btn btn-outline" (click)="setMode('register')">
+            Sign Up
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

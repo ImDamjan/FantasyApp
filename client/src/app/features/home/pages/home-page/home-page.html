@@ -1,0 +1,13 @@
+<div class="home-page">
+  <header class="home-header">
+    <div class="logo">
+      <span class="logo__main">FANTASY</span><span class="logo__accent">LEAGUE</span>
+    </div>
+    <button type="button" class="btn btn-link" (click)="onLogout()">Odjavi se</button>
+  </header>
+
+  <main class="home-content">
+    <h1>Dobrodošao, {{ currentUser()?.username }}!</h1>
+    <p>Ovde će uskoro biti tvoj fantasy tim.</p>
+  </main>
+</div>

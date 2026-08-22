@@ -1,0 +1,81 @@
+:root {
+  --fa-purple: #37003c;
+  --fa-purple-light: #4f0057;
+  --fa-purple-dark: #220025;
+  --fa-green: #00ff87;
+  --fa-green-dark: #00c96a;
+  --fa-cyan: #04f5ff;
+  --fa-pink: #e90052;
+
+  --fa-white: #ffffff;
+  --fa-text-dark: #1a1a2e;
+  --fa-text-muted: #6b6b7b;
+  --fa-border: #e2e0e6;
+  --fa-input-bg: #f7f6f9;
+  --fa-error: #d6003d;
+
+  --fa-page-bg: linear-gradient(160deg, var(--fa-purple) 0%, var(--fa-purple-dark) 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  color: var(--fa-text-dark);
+  background: var(--fa-white);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1.5rem;
+  border-radius: 999px;
+  border: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+}
+
+.btn-primary {
+  background: var(--fa-green);
+  color: var(--fa-purple-dark);
+}
+
+.btn-link {
+  background: transparent;
+  color: var(--fa-purple);
+  font-weight: 600;
+  padding: 0.4rem 0;
+}
