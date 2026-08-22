@@ -1,0 +1,202 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using FantasyApp.BusinessLogic.Interfaces;
+using FantasyApp.Common.Interfaces;
+using FantasyApp.Common.Settings;
+using FantasyApp.Entity.Dtos.Auth;
+using FantasyApp.Entity.Models;
+using FantasyApp.Repository.Interfaces;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
+
+namespace FantasyApp.BusinessLogic.Services
+{
+    public class AuthService : IAuthService
+    {
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ITokenService _tokenService;
+        private readonly IRefreshTokenRepository _refreshTokenRepository;
+        private readonly IEmailSender _emailSender;
+        private readonly AppSettings _appSettings;
+
+        public AuthService(
+            UserManager<ApplicationUser> userManager,
+            ITokenService tokenService,
+            IRefreshTokenRepository refreshTokenRepository,
+            IEmailSender emailSender,
+            IOptions<AppSettings> appSettings)
+        {
+            _userManager = userManager;
+            _tokenService = tokenService;
+            _refreshTokenRepository = refreshTokenRepository;
+            _emailSender = emailSender;
+            _appSettings = appSettings.Value;
+        }
+
+        public async Task<AuthResult<AuthResponseDto>> RegisterAsync(RegisterRequestDto request)
+        {
+            var existingUser = await _userManager.FindByEmailAsync(request.Email);
+            if (existingUser != null)
+            {
+                return AuthResult<AuthResponseDto>.Failure("Korisnik sa ovim email-om već postoji.");
+            }
+
+            var user = new ApplicationUser
+            {
+                Email = request.Email,
+                UserName = request.Username
+            };
+
+            var createResult = await _userManager.CreateAsync(user, request.Password);
+            if (!createResult.Succeeded)
+            {
+                var errors = string.Join(" ", createResult.Errors.Select(e => e.Description));
+                return AuthResult<AuthResponseDto>.Failure(errors);
+            }
+
+            var authResponse = await IssueTokensAsync(user);
+            return AuthResult<AuthResponseDto>.Success(authResponse);
+        }
+
+        public async Task<AuthResult<AuthResponseDto>> LoginAsync(LoginRequestDto request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null)
+            {
+                return AuthResult<AuthResponseDto>.Failure("Pogrešan email ili lozinka.");
+            }
+
+            var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
+            if (!passwordValid)
+            {
+                return AuthResult<AuthResponseDto>.Failure("Pogrešan email ili lozinka.");
+            }
+
+            var authResponse = await IssueTokensAsync(user);
+            return AuthResult<AuthResponseDto>.Success(authResponse);
+        }
+
+        public async Task<AuthResult<AuthResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto request)
+        {
+            var existingToken = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken);
+            if (existingToken == null || !existingToken.IsActive || existingToken.User == null)
+            {
+                return AuthResult<AuthResponseDto>.Failure("Refresh token je nevažeći ili je istekao.");
+            }
+
+            var (newRefreshTokenValue, newRefreshTokenExpiresAt) = _tokenService.GenerateRefreshToken();
+
+            existingToken.RevokedAt = DateTime.UtcNow;
+            existingToken.ReplacedByToken = newRefreshTokenValue;
+
+            var newRefreshToken = new RefreshToken
+            {
+                Id = Guid.NewGuid(),
+                UserId = existingToken.UserId,
+                Token = newRefreshTokenValue,
+                ExpiresAt = newRefreshTokenExpiresAt,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _refreshTokenRepository.AddAsync(newRefreshToken);
+            await _refreshTokenRepository.SaveChangesAsync();
+
+            var (accessToken, accessTokenExpiresAt) = _tokenService.GenerateAccessToken(existingToken.User);
+
+            var response = new AuthResponseDto
+            {
+                UserId = existingToken.User.Id,
+                Email = existingToken.User.Email ?? string.Empty,
+                Username = existingToken.User.UserName ?? string.Empty,
+                AccessToken = accessToken,
+                AccessTokenExpiresAt = accessTokenExpiresAt,
+                RefreshToken = newRefreshTokenValue,
+                RefreshTokenExpiresAt = newRefreshTokenExpiresAt
+            };
+
+            return AuthResult<AuthResponseDto>.Success(response);
+        }
+
+        public async Task<AuthResult<bool>> RevokeTokenAsync(RefreshTokenRequestDto request)
+        {
+            var existingToken = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken);
+            if (existingToken == null || !existingToken.IsActive)
+            {
+                return AuthResult<bool>.Failure("Refresh token je nevažeći ili je već opozvan.");
+            }
+
+            existingToken.RevokedAt = DateTime.UtcNow;
+            await _refreshTokenRepository.SaveChangesAsync();
+
+            return AuthResult<bool>.Success(true);
+        }
+
+        public async Task ForgotPasswordAsync(ForgotPasswordRequestDto request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null)
+            {
+                return;
+            }
+
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var encodedToken = Uri.EscapeDataString(resetToken);
+            var resetLink = $"{_appSettings.ClientUrl}/reset-password?email={Uri.EscapeDataString(request.Email)}&token={encodedToken}";
+
+            var htmlBody = $"""
+                <p>Zdravo {user.UserName},</p>
+                <p>Zatražena je promena lozinke za tvoj FantasyApp nalog. Klikni na link ispod da postaviš novu lozinku:</p>
+                <p><a href="{resetLink}">{resetLink}</a></p>
+                <p>Ako nisi ti zatražio ovu promenu, slobodno ignoriši ovaj email.</p>
+                """;
+
+            await _emailSender.SendEmailAsync(request.Email, "Resetovanje lozinke - FantasyApp", htmlBody);
+        }
+
+        public async Task<AuthResult<bool>> ResetPasswordAsync(ResetPasswordRequestDto request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null)
+            {
+                return AuthResult<bool>.Failure("Nevažeći zahtev za reset lozinke.");
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(" ", result.Errors.Select(e => e.Description));
+                return AuthResult<bool>.Failure(errors);
+            }
+
+            return AuthResult<bool>.Success(true);
+        }
+
+        private async Task<AuthResponseDto> IssueTokensAsync(ApplicationUser user)
+        {
+            var (accessToken, accessTokenExpiresAt) = _tokenService.GenerateAccessToken(user);
+            var (refreshTokenValue, refreshTokenExpiresAt) = _tokenService.GenerateRefreshToken();
+
+            var refreshToken = new RefreshToken
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                Token = refreshTokenValue,
+                ExpiresAt = refreshTokenExpiresAt,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _refreshTokenRepository.AddAsync(refreshToken);
+            await _refreshTokenRepository.SaveChangesAsync();
+
+            return new AuthResponseDto
+            {
+                UserId = user.Id,
+                Email = user.Email ?? string.Empty,
+                Username = user.UserName ?? string.Empty,
+                AccessToken = accessToken,
+                AccessTokenExpiresAt = accessTokenExpiresAt,
+                RefreshToken = refreshTokenValue,
+                RefreshTokenExpiresAt = refreshTokenExpiresAt
+            };
+        }
+    }
+}
