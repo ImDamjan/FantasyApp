@@ -29,7 +29,7 @@ export class ResetPasswordPage {
 
   readonly form = this.fb.nonNullable.group(
     {
-      newPassword: ['', [Validators.required, Validators.minLength(6)]],
+      newPassword: ['', [Validators.required]],
       confirmNewPassword: ['', [Validators.required]],
     },
     { validators: passwordMatchValidator('newPassword', 'confirmNewPassword') },

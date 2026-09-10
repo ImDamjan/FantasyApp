@@ -33,7 +33,7 @@ export class AuthPage {
     {
       email: ['', [Validators.required, Validators.email]],
       username: ['', [Validators.required, Validators.minLength(3)]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      password: ['', [Validators.required]],
       confirmPassword: ['', [Validators.required]],
     },
     { validators: passwordMatchValidator('password', 'confirmPassword') },

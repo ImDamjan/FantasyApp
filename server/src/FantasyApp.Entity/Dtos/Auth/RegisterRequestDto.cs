@@ -13,7 +13,6 @@ namespace FantasyApp.Entity.Dtos.Auth
         public string Username { get; set; } = string.Empty;
 
         [Required]
-        [MinLength(6)]
         public string Password { get; set; } = string.Empty;
 
         [Required]
