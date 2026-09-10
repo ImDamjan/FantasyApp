@@ -70,6 +70,7 @@ appsettings.*.local.json
 appsettings.Development.json
 secrets.json
 *.env
+TEST_USER_CREDENTIALS.md
 
 # NuGet
 *.nupkg
@@ -80,20 +81,17 @@ secrets.json
 ##########################
 # Angular / Node
 ##########################
-/dist/
-/out-tsc/
+dist/
+out-tsc/
 /tmp/
-/coverage/
-/e2e/test-output/
+coverage/
+e2e/test-output/
 .angular/
 /.angular-cli.json
 /.ng/
 
 # Node modules and dependency files
-/node_modules/
 node_modules/
-/package-lock.json
-/yarn.lock
 
 # TypeScript cache
 *.tsbuildinfo

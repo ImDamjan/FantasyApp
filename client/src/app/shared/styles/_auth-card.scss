@@ -1,0 +1,53 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fa-page-bg);
+  padding: 2rem 1rem;
+}
+
+.simple-card {
+  width: 420px;
+  max-width: 100%;
+  background: var(--fa-white);
+  border-radius: 18px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+  padding: 2.75rem 2.25rem;
+  text-align: center;
+}
+
+.form-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--fa-text-dark);
+  margin: 0 0 0.6rem;
+}
+
+.subtitle {
+  font-size: 0.88rem;
+  color: var(--fa-text-muted);
+  line-height: 1.5;
+  margin: 0 0 1.75rem;
+}
+
+.form-error {
+  color: var(--fa-error);
+  font-size: 0.85rem;
+  margin: -0.5rem 0 1rem;
+}
+
+.btn-primary {
+  width: 100%;
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--fa-text-muted);
+
+  &:hover {
+    color: var(--fa-purple);
+  }
+}

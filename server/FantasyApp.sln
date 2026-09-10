@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{78FC0AA4-2C19-4B2D-9CB1-8C8A92FCC1AD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FantasyApp.Api", "src\FantasyApp.Api\FantasyApp.Api.csproj", "{CA5AD601-DB8A-4FB8-9751-31CA8ED2ADA0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FantasyApp.BusinessLogic", "src\FantasyApp.BusinessLogic\FantasyApp.BusinessLogic.csproj", "{39C65E42-43BE-4EE1-9220-0A2EBC27285A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FantasyApp.Repository", "src\FantasyApp.Repository\FantasyApp.Repository.csproj", "{24F8CBDB-6847-401C-95A5-8A4971F57557}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FantasyApp.Entity", "src\FantasyApp.Entity\FantasyApp.Entity.csproj", "{DF475FA2-97D0-48D3-8819-1035B2B5A999}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FantasyApp.Common", "src\FantasyApp.Common\FantasyApp.Common.csproj", "{693430F2-0AA4-4E40-93A9-06BFCE15D9BA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CA5AD601-DB8A-4FB8-9751-31CA8ED2ADA0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CA5AD601-DB8A-4FB8-9751-31CA8ED2ADA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CA5AD601-DB8A-4FB8-9751-31CA8ED2ADA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CA5AD601-DB8A-4FB8-9751-31CA8ED2ADA0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{39C65E42-43BE-4EE1-9220-0A2EBC27285A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39C65E42-43BE-4EE1-9220-0A2EBC27285A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39C65E42-43BE-4EE1-9220-0A2EBC27285A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39C65E42-43BE-4EE1-9220-0A2EBC27285A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24F8CBDB-6847-401C-95A5-8A4971F57557}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24F8CBDB-6847-401C-95A5-8A4971F57557}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24F8CBDB-6847-401C-95A5-8A4971F57557}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24F8CBDB-6847-401C-95A5-8A4971F57557}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF475FA2-97D0-48D3-8819-1035B2B5A999}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF475FA2-97D0-48D3-8819-1035B2B5A999}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF475FA2-97D0-48D3-8819-1035B2B5A999}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF475FA2-97D0-48D3-8819-1035B2B5A999}.Release|Any CPU.Build.0 = Release|Any CPU
+		{693430F2-0AA4-4E40-93A9-06BFCE15D9BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{693430F2-0AA4-4E40-93A9-06BFCE15D9BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{693430F2-0AA4-4E40-93A9-06BFCE15D9BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{693430F2-0AA4-4E40-93A9-06BFCE15D9BA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CA5AD601-DB8A-4FB8-9751-31CA8ED2ADA0} = {78FC0AA4-2C19-4B2D-9CB1-8C8A92FCC1AD}
+		{39C65E42-43BE-4EE1-9220-0A2EBC27285A} = {78FC0AA4-2C19-4B2D-9CB1-8C8A92FCC1AD}
+		{24F8CBDB-6847-401C-95A5-8A4971F57557} = {78FC0AA4-2C19-4B2D-9CB1-8C8A92FCC1AD}
+		{DF475FA2-97D0-48D3-8819-1035B2B5A999} = {78FC0AA4-2C19-4B2D-9CB1-8C8A92FCC1AD}
+		{693430F2-0AA4-4E40-93A9-06BFCE15D9BA} = {78FC0AA4-2C19-4B2D-9CB1-8C8A92FCC1AD}
+	EndGlobalSection
+EndGlobal

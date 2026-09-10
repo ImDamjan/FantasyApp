@@ -1,0 +1,104 @@
+<div class="auth-page">
+  <div class="auth-card" [class.auth-card--register]="mode() === 'register'">
+    <!-- Sign In -->
+    <div class="form-panel form-panel--login">
+      <form [formGroup]="loginForm" (ngSubmit)="onLogin()" novalidate>
+        <app-logo />
+        <h1 class="form-title">Sign In</h1>
+
+        <app-form-field
+          [control]="loginForm.controls.email"
+          label="Email"
+          type="email"
+          placeholder="you@email.com"
+          autocomplete="email"
+        />
+        <app-form-field
+          [control]="loginForm.controls.password"
+          label="Password"
+          type="password"
+          placeholder="••••••••"
+          autocomplete="current-password"
+        />
+
+        <a class="forgot-link" routerLink="/auth/forgot-password">Forgot your password?</a>
+
+        @if (loginError()) {
+          <p class="form-error">{{ loginError() }}</p>
+        }
+
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">Sign In</button>
+
+        <p class="mobile-switch">
+          Don't have an account?
+          <button type="button" class="link-btn" (click)="setMode('register')">Sign up</button>
+        </p>
+      </form>
+    </div>
+
+    <!-- Sign Up -->
+    <div class="form-panel form-panel--register">
+      <form [formGroup]="registerForm" (ngSubmit)="onRegister()" novalidate>
+        <app-logo />
+        <h1 class="form-title">Create Account</h1>
+
+        <app-form-field
+          [control]="registerForm.controls.email"
+          label="Email"
+          type="email"
+          placeholder="you@email.com"
+          autocomplete="email"
+        />
+        <app-form-field
+          [control]="registerForm.controls.username"
+          label="Username"
+          placeholder="e.g. mm10"
+          autocomplete="username"
+        />
+        <app-form-field
+          [control]="registerForm.controls.password"
+          label="Password"
+          type="password"
+          placeholder="••••••••"
+          autocomplete="new-password"
+        />
+        <app-form-field
+          [control]="registerForm.controls.confirmPassword"
+          label="Confirm password"
+          type="password"
+          placeholder="••••••••"
+          autocomplete="new-password"
+        />
+
+        @if (registerError()) {
+          <p class="form-error">{{ registerError() }}</p>
+        }
+
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">Sign Up</button>
+
+        <p class="mobile-switch">
+          Already have an account?
+          <button type="button" class="link-btn" (click)="setMode('login')">Sign in</button>
+        </p>
+      </form>
+    </div>
+
+    <!-- Overlay -->
+    <div class="overlay-container">
+      <div class="overlay">
+        <div class="overlay-panel overlay-panel--left">
+          <h2>Welcome back!</h2>
+          <p>Sign in to keep managing your team.</p>
+          <button type="button" class="btn btn-outline" (click)="setMode('login')">Sign In</button>
+        </div>
+        <div class="overlay-panel overlay-panel--right">
+          <h2>New here?</h2>
+          <p>Create an account and build your dream team.</p>
+          <button type="button" class="btn btn-outline" (click)="setMode('register')">
+            Sign Up
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

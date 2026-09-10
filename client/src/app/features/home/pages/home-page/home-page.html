@@ -1,0 +1,11 @@
+<div class="home-page">
+  <header class="home-header">
+    <app-logo />
+    <button type="button" class="btn btn-link" (click)="onLogout()">Sign out</button>
+  </header>
+
+  <main class="home-content">
+    <h1>Welcome, {{ currentUser()?.username }}!</h1>
+    <p>Your fantasy team will live here soon.</p>
+  </main>
+</div>
