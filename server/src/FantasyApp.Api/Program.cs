@@ -1,4 +1,5 @@
 using System.Text;
+using FantasyApp.Api.BackgroundServices;
 using FantasyApp.BusinessLogic.Interfaces;
 using FantasyApp.BusinessLogic.Services;
 using FantasyApp.Common.Interfaces;
@@ -20,8 +21,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"));
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("App"));
+builder.Services.Configure<FplSettings>(builder.Configuration.GetSection("Fpl"));
 
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings();
+var fplSettings = builder.Configuration.GetSection("Fpl").Get<FplSettings>() ?? new FplSettings();
 
 // Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -80,6 +83,31 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
+// Gameplay domain services
+builder.Services.AddScoped<ITeamRepository, TeamRepository>();
+builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
+builder.Services.AddScoped<IGameweekRepository, GameweekRepository>();
+builder.Services.AddScoped<IFixtureRepository, FixtureRepository>();
+builder.Services.AddScoped<IPlayerGameweekStatRepository, PlayerGameweekStatRepository>();
+builder.Services.AddScoped<ILeagueRepository, LeagueRepository>();
+builder.Services.AddScoped<IFantasyTeamRepository, FantasyTeamRepository>();
+builder.Services.AddScoped<ITransferRepository, TransferRepository>();
+builder.Services.AddScoped<IUserGameweekScoreRepository, UserGameweekScoreRepository>();
+builder.Services.AddScoped<IFplDataSyncService, FplDataSyncService>();
+builder.Services.AddScoped<IPlayerService, PlayerService>();
+builder.Services.AddScoped<ISquadService, SquadService>();
+builder.Services.AddScoped<ITransferService, TransferService>();
+builder.Services.AddScoped<ILeagueService, LeagueService>();
+builder.Services.AddScoped<IScoringService, ScoringService>();
+builder.Services.AddScoped<IPointsService, PointsService>();
+
+builder.Services.AddHttpClient<IFplApiClient, FplApiClient>(client =>
+{
+    client.BaseAddress = new Uri(fplSettings.BaseUrl);
+});
+
+builder.Services.AddHostedService<FplSyncService>();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -118,5 +146,23 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var leagueRepository = scope.ServiceProvider.GetRequiredService<ILeagueRepository>();
+    var officialLeague = await leagueRepository.GetOfficialLeagueAsync();
+    if (officialLeague == null)
+    {
+        await leagueRepository.AddAsync(new League
+        {
+            Name = "Overall League",
+            JoinCode = "OFFICIAL",
+            IsOfficial = true,
+            MaxMembers = int.MaxValue,
+            CreatedAt = DateTime.UtcNow
+        });
+        await leagueRepository.SaveChangesAsync();
+    }
+}
 
 app.Run();

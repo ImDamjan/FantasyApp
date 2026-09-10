@@ -12,6 +12,12 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
+.home-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .home-content {
   padding: 3rem 2rem;
   text-align: center;
@@ -23,4 +29,30 @@
   p {
     color: var(--fa-text-muted);
   }
+}
+
+.points-summary {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin: 1.5rem 0;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.points-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--fa-purple);
+}
+
+.points-label {
+  font-size: 0.75rem;
+  color: var(--fa-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }

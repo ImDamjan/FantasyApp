@@ -1,0 +1,58 @@
+<div class="page">
+  <header class="page-header">
+    <a routerLink="/" class="btn btn-link">&larr; Home</a>
+    <h1>Leagues</h1>
+    <span></span>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="error-banner">{{ errorMessage() }}</p>
+  }
+
+  <div class="forms-row">
+    <div class="form-card">
+      <h2>Create a league</h2>
+      <input type="text" placeholder="League name" [(ngModel)]="newLeagueName" />
+      <button type="button" class="btn btn-primary" [disabled]="creating()" (click)="createLeague()">
+        {{ creating() ? 'Creating...' : 'Create' }}
+      </button>
+    </div>
+
+    <div class="form-card">
+      <h2>Join a league</h2>
+      <input type="text" placeholder="Join code" [(ngModel)]="joinCode" />
+      <button type="button" class="btn btn-primary" [disabled]="joining()" (click)="joinLeague()">
+        {{ joining() ? 'Joining...' : 'Join' }}
+      </button>
+    </div>
+  </div>
+
+  <h2 class="section-title">My leagues</h2>
+
+  @if (loading()) {
+    <p class="hint">Loading...</p>
+  } @else if (leagues().length === 0) {
+    <p class="hint">You're not in any leagues yet.</p>
+  } @else {
+    <ul class="league-list">
+      @for (league of leagues(); track league.id) {
+        <li>
+          <a [routerLink]="[league.id]" class="league-row">
+            <span class="league-name">
+              {{ league.name }}
+              @if (league.isOfficial) {
+                <span class="official-badge">Official</span>
+              }
+            </span>
+            <span class="league-meta">
+              {{ league.memberCount }} members
+              @if (!league.isOfficial) {
+                &middot; code: {{ league.joinCode }}
+              }
+            </span>
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</div>

@@ -1,0 +1,99 @@
+.page {
+  min-height: 100vh;
+  background: var(--fa-input-bg);
+  padding: 1.5rem 2rem 3rem;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+
+  h1 {
+    color: var(--fa-purple);
+    font-size: 1.3rem;
+  }
+}
+
+.error-banner {
+  background: #fde8ee;
+  color: var(--fa-error);
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+.hint {
+  color: var(--fa-text-muted);
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.subtitle {
+  color: var(--fa-text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.transfers-layout {
+  display: grid;
+  grid-template-columns: 1fr minmax(280px, 380px);
+  gap: 1.5rem;
+}
+
+.search-column h2 {
+  color: var(--fa-purple);
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.squad-summary {
+  display: flex;
+  justify-content: space-between;
+  background: var(--fa-white);
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fa-purple);
+
+  .cost {
+    color: var(--fa-error);
+  }
+}
+
+.pending-list {
+  margin-top: 1.25rem;
+  background: var(--fa-white);
+  border-radius: 12px;
+  padding: 1rem;
+
+  h2 {
+    color: var(--fa-purple);
+    font-size: 0.9rem;
+    margin-bottom: 0.6rem;
+  }
+}
+
+.pending-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--fa-border);
+}
+
+.remove-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: var(--fa-error);
+  color: var(--fa-white);
+  cursor: pointer;
+  font-weight: 700;
+}

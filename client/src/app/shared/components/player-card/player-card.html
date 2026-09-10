@@ -1,0 +1,11 @@
+<button type="button" class="player-card" [class.selected]="player.isSelected" (click)="select.emit()">
+  @if (player.isCaptain) {
+    <span class="badge badge-captain">C</span>
+  }
+  @if (player.isViceCaptain) {
+    <span class="badge badge-vice">V</span>
+  }
+  <span class="player-name">{{ player.webName }}</span>
+  <span class="player-team">{{ player.teamShortName }}</span>
+  <span class="player-price">£{{ player.priceMillions }}m</span>
+</button>

@@ -1,0 +1,33 @@
+.pitch {
+  background: linear-gradient(180deg, var(--fa-green-dark) 0%, var(--fa-green) 100%);
+  border-radius: 16px;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 1.25rem;
+  min-height: 420px;
+}
+
+.pitch-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.bench-area {
+  margin-top: 1rem;
+  background: var(--fa-purple-dark);
+  border-radius: 16px;
+  padding: 1rem;
+}
+
+.bench-label {
+  color: var(--fa-white);
+  font-weight: 700;
+  font-size: 0.75rem;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

@@ -19,21 +19,28 @@ namespace FantasyApp.BusinessLogic.Services
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IEmailSender _emailSender;
         private readonly AppSettings _appSettings;
+        private readonly IFantasyTeamRepository _fantasyTeamRepository;
+        private readonly ILeagueRepository _leagueRepository;
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
             ITokenService tokenService,
             IRefreshTokenRepository refreshTokenRepository,
             IEmailSender emailSender,
-            IOptions<AppSettings> appSettings)
+            IOptions<AppSettings> appSettings,
+            IFantasyTeamRepository fantasyTeamRepository,
+            ILeagueRepository leagueRepository)
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _refreshTokenRepository = refreshTokenRepository;
             _emailSender = emailSender;
             _appSettings = appSettings.Value;
+            _fantasyTeamRepository = fantasyTeamRepository;
+            _leagueRepository = leagueRepository;
         }
 
+        
         public async Task<AuthResult<AuthResponseDto>> RegisterAsync(RegisterRequestDto request)
         {
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
@@ -53,6 +60,27 @@ namespace FantasyApp.BusinessLogic.Services
             {
                 var errors = string.Join(" ", createResult.Errors.Select(e => e.Description));
                 return AuthResult<AuthResponseDto>.Failure(errors);
+            }
+
+            await _fantasyTeamRepository.AddAsync(new FantasyTeam
+            {
+                UserId = user.Id,
+                Name = $"{user.UserName}'s Team",
+                BudgetRemainingTenths = 1000,
+                FreeTransfersAvailable = 1
+            });
+            await _fantasyTeamRepository.SaveChangesAsync();
+
+            var officialLeague = await _leagueRepository.GetOfficialLeagueAsync();
+            if (officialLeague != null)
+            {
+                await _leagueRepository.AddMembershipAsync(new LeagueMembership
+                {
+                    LeagueId = officialLeague.Id,
+                    UserId = user.Id,
+                    JoinedAt = DateTime.UtcNow
+                });
+                await _leagueRepository.SaveChangesAsync();
             }
 
             var authResponse = await IssueTokensAsync(user);

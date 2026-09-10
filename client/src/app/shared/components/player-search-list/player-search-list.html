@@ -1,0 +1,53 @@
+<div class="search-panel">
+  <input
+    type="text"
+    placeholder="Search players..."
+    class="search-input"
+    [(ngModel)]="searchTerm"
+    (ngModelChange)="onSearchInput()"
+  />
+
+  <div class="filters">
+    <select class="filter-select" [(ngModel)]="position" (ngModelChange)="search()">
+      <option value="">All positions</option>
+      @for (pos of positions; track pos) {
+        <option [value]="pos">{{ pos }}</option>
+      }
+    </select>
+
+    <input
+      type="number"
+      placeholder="Max £m"
+      class="price-input"
+      min="0"
+      step="0.5"
+      [(ngModel)]="maxPrice"
+      (ngModelChange)="search()"
+    />
+  </div>
+
+  <div class="results">
+    @if (loading()) {
+      <p class="hint">Loading...</p>
+    } @else if (players().length === 0) {
+      <p class="hint">No players found.</p>
+    }
+
+    @for (p of players(); track p.id) {
+      <div class="result-row" [class.excluded]="isExcluded(p.id)">
+        <div class="result-info">
+          <span class="result-name">{{ p.webName }}</span>
+          <span class="result-meta">{{ p.teamShortName }} · {{ p.position }} · £{{ p.priceMillions }}m</span>
+        </div>
+        <button
+          type="button"
+          class="add-btn"
+          [disabled]="isExcluded(p.id) || disableAdd"
+          (click)="addPlayer.emit(p)"
+        >
+          {{ isExcluded(p.id) ? '✓' : '+' }}
+        </button>
+      </div>
+    }
+  </div>
+</div>

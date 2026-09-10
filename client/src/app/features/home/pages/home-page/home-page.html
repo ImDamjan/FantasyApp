@@ -1,11 +1,32 @@
 <div class="home-page">
   <header class="home-header">
     <app-logo />
-    <button type="button" class="btn btn-link" (click)="onLogout()">Sign out</button>
+    <nav class="home-nav">
+      <a routerLink="/team" class="btn btn-link">My Team</a>
+      <a routerLink="/transfers" class="btn btn-link">Transfers</a>
+      <a routerLink="/leagues" class="btn btn-link">Leagues</a>
+      <button type="button" class="btn btn-link" (click)="onLogout()">Sign out</button>
+    </nav>
   </header>
 
   <main class="home-content">
     <h1>Welcome, {{ currentUser()?.username }}!</h1>
-    <p>Your fantasy team will live here soon.</p>
+
+    @if (pointsSummary()) {
+      <div class="points-summary">
+        <div>
+          <span class="points-value">{{ pointsSummary()?.currentGameweekPoints }}</span>
+          <span class="points-label">This gameweek</span>
+        </div>
+        <div>
+          <span class="points-value">{{ pointsSummary()?.totalPoints }}</span>
+          <span class="points-label">Total points</span>
+        </div>
+      </div>
+    }
+
+    <p>
+      <a routerLink="/team" class="btn btn-primary">Pick your team</a>
+    </p>
   </main>
 </div>

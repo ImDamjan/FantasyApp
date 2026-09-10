@@ -1,0 +1,34 @@
+<div class="page">
+  <header class="page-header">
+    <a routerLink="/leagues" class="btn btn-link">&larr; Leagues</a>
+    <h1>{{ standings()?.leagueName ?? 'Standings' }}</h1>
+    <span></span>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="error-banner">{{ errorMessage() }}</p>
+  } @else if (loading()) {
+    <p class="hint">Loading standings...</p>
+  } @else {
+    <table class="standings-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Player</th>
+          <th>GW</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of standings()?.entries; track entry.userId) {
+          <tr>
+            <td>{{ entry.rank }}</td>
+            <td>{{ entry.username }}</td>
+            <td>{{ entry.gameweekPoints }}</td>
+            <td>{{ entry.totalPoints }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
