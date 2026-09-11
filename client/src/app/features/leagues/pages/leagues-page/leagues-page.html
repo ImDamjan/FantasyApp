@@ -1,8 +1,7 @@
+<app-shell (logout)="onLogout()">
 <div class="page">
   <header class="page-header">
-    <a routerLink="/" class="btn btn-link">&larr; Home</a>
-    <h1>Leagues</h1>
-    <span></span>
+    <h1>My Leagues</h1>
   </header>
 
   @if (errorMessage()) {
@@ -56,3 +55,4 @@
     </ul>
   }
 </div>
+</app-shell>

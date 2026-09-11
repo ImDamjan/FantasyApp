@@ -308,19 +308,19 @@ namespace FantasyApp.BusinessLogic.Services
                 return "Starting XI must include exactly 1 goalkeeper.";
             }
 
-            if (defenders < 3)
+            if (defenders is < 3 or > 5)
             {
-                return "Starting XI must include at least 3 defenders.";
+                return "Starting XI must include between 3 and 5 defenders.";
             }
 
-            if (midfielders < 2)
+            if (midfielders is < 3 or > 5)
             {
-                return "Starting XI must include at least 2 midfielders.";
+                return "Starting XI must include between 3 and 5 midfielders.";
             }
 
-            if (forwards < 1)
+            if (forwards is < 1 or > 3)
             {
-                return "Starting XI must include at least 1 forward.";
+                return "Starting XI must include between 1 and 3 forwards.";
             }
 
             if (captainPlayerId == viceCaptainPlayerId)

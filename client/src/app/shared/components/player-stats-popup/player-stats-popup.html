@@ -1,0 +1,58 @@
+<div class="menu-backdrop" (click)="close.emit()">
+  <div class="menu-card" (click)="$event.stopPropagation()">
+    <div class="menu-header">
+      <div class="menu-shirt">
+        <app-shirt-icon [teamShortName]="player.teamShortName" />
+      </div>
+      <div>
+        <div class="menu-name">
+          {{ player.webName }}
+          @if (player.isCaptain) {
+            <span class="tag captain">C</span>
+          }
+          @if (player.isViceCaptain) {
+            <span class="tag vice">V</span>
+          }
+        </div>
+        <div class="menu-team">{{ player.teamShortName }} &middot; {{ player.position }}</div>
+      </div>
+      <button type="button" class="menu-close" (click)="close.emit()" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="points-summary">
+      <span class="points-value">{{ player.gameweekPoints }}</span>
+      <span class="points-label">points this gameweek{{ player.isCaptain ? ' (captain, x2)' : '' }}</span>
+    </div>
+
+    @if (breakdown.length > 0) {
+      <div class="breakdown">
+        @for (row of breakdown; track row.label) {
+          <div class="breakdown-row">
+            <span>{{ row.label }}</span>
+            <strong>{{ row.value }}</strong>
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="hint">No points breakdown yet for this gameweek.</p>
+    }
+
+    <div class="stats-section">
+      <h3>Form</h3>
+      <p class="form-value">{{ player.form }}</p>
+    </div>
+
+    @if (player.nextFixtures.length > 0) {
+      <div class="stats-section">
+        <h3>Next fixtures</h3>
+        <div class="fixtures-row">
+          @for (f of player.nextFixtures; track f.opponentShortName + f.kickoffTime) {
+            <span class="fixture-chip" [class]="difficultyLabel(f.difficulty)">
+              {{ f.opponentShortName }}{{ f.isHome ? ' (H)' : ' (A)' }}
+            </span>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

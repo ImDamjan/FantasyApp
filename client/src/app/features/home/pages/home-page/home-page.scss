@@ -1,58 +1,225 @@
-.home-page {
-  min-height: 100vh;
-  background: var(--fa-input-bg);
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  max-width: 1100px;
+
+  @media (max-width: 860px) {
+    grid-template-columns: 1fr;
+  }
 }
 
-.home-header {
+.home-main,
+.home-side {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.1rem 2rem;
-  background: var(--fa-white);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
 }
 
-.home-nav {
+.panel {
+  background: var(--fa-panel-bg);
+  border: 1px solid var(--fa-panel-border);
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+
+  h2 {
+    margin: 0 0 1rem;
+    font-size: 1.1rem;
+    color: var(--fa-text-light);
+  }
+}
+
+/* Team card */
+
+.team-card {
+  border-radius: 16px;
+  padding: 1.5rem 1.6rem;
+  background: linear-gradient(135deg, var(--fa-cyan) 0%, var(--fa-purple) 65%);
+  color: var(--fa-white);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+.team-card-top {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
 
-.home-content {
-  padding: 3rem 2rem;
-  text-align: center;
+.team-shield {
+  width: 46px;
+  height: 52px;
+  flex: 0 0 auto;
+}
 
+.team-identity {
   h1 {
-    color: var(--fa-purple);
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
   }
 
   p {
-    color: var(--fa-text-muted);
+    margin: 0.15rem 0 0;
+    font-weight: 600;
+    opacity: 0.92;
   }
 }
 
-.points-summary {
+.team-card-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.35);
+  margin: 1.25rem 0;
+}
+
+.gameweek-label {
+  text-align: center;
+  margin: 0 0 0.75rem;
+  opacity: 0.9;
+  font-weight: 600;
+}
+
+.team-stats {
   display: flex;
-  justify-content: center;
-  gap: 2rem;
-  margin: 1.5rem 0;
+  justify-content: space-around;
+  text-align: center;
+  margin-bottom: 1.4rem;
 
-  > div {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  .stat-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+
+  .stat-label {
+    font-size: 0.78rem;
+    opacity: 0.85;
   }
 }
 
-.points-value {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--fa-purple);
+.team-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
-.points-label {
-  font-size: 0.75rem;
-  color: var(--fa-text-muted);
+.pill-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--fa-white);
+  font-weight: 700;
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.34);
+  }
+}
+
+.team-pitch-panel {
+  .subtitle {
+    margin: -0.5rem 0 1rem;
+    font-size: 0.8rem;
+    color: var(--fa-text-light-muted);
+  }
+}
+
+/* Overall stats panel */
+
+.stats-panel {
+  padding: 0.5rem 1.4rem;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--fa-panel-border);
+  color: var(--fa-text-light-muted);
+  font-size: 0.92rem;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  strong {
+    color: var(--fa-text-light);
+    font-size: 1rem;
+  }
+}
+
+/* Deadline panel */
+
+.deadline-gw {
+  color: var(--fa-text-light-muted);
+  margin: -0.5rem 0 1.1rem;
+}
+
+.countdown {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44px;
+}
+
+.countdown-value {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--fa-text-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-label {
+  font-size: 0.68rem;
+  color: var(--fa-text-light-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.countdown-colon {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--fa-text-light-muted);
+  transform: translateY(-6px);
+}
+
+/* Upcoming deadlines table */
+
+.upcoming-panel table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.upcoming-panel th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fa-text-light-muted);
+  padding-bottom: 0.6rem;
+  font-weight: 600;
+}
+
+.upcoming-panel td {
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--fa-panel-border);
+  color: var(--fa-text-light);
+  font-size: 0.88rem;
+
+  &:first-child {
+    font-weight: 700;
+  }
 }

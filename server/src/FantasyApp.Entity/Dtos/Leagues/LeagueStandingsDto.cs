@@ -9,6 +9,8 @@ namespace FantasyApp.Entity.Dtos.Leagues
         public int GameweekPoints { get; set; }
         public int TotalPoints { get; set; }
         public int Rank { get; set; }
+        /// <summary>Rank as of the previous gameweek; 0 if there is no previous gameweek to compare against.</summary>
+        public int PreviousRank { get; set; }
     }
 
     public class LeagueStandingsDto

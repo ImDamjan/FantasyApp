@@ -1,3 +1,4 @@
+<app-shell (logout)="onLogout()">
 <div class="page">
   <header class="page-header">
     <a routerLink="/leagues" class="btn btn-link">&larr; Leagues</a>
@@ -13,6 +14,7 @@
     <table class="standings-table">
       <thead>
         <tr>
+          <th></th>
           <th>Rank</th>
           <th>Player</th>
           <th>GW</th>
@@ -22,6 +24,15 @@
       <tbody>
         @for (entry of standings()?.entries; track entry.userId) {
           <tr>
+            <td>
+              @if (entry.previousRank === 0 || entry.previousRank === entry.rank) {
+                <span class="rank-arrow same" title="No change">&minus;</span>
+              } @else if (entry.previousRank > entry.rank) {
+                <span class="rank-arrow up" title="Moved up">&#9650;</span>
+              } @else {
+                <span class="rank-arrow down" title="Moved down">&#9660;</span>
+              }
+            </td>
             <td>{{ entry.rank }}</td>
             <td>{{ entry.username }}</td>
             <td>{{ entry.gameweekPoints }}</td>
@@ -32,3 +43,4 @@
     </table>
   }
 </div>
+</app-shell>

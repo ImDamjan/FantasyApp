@@ -8,6 +8,8 @@ namespace FantasyApp.Repository.Interfaces
     {
         Task<Dictionary<long, int>> GetTotalPointsByUserIdsAsync(IEnumerable<long> userIds);
         Task<Dictionary<long, int>> GetPointsForGameweekByUserIdsAsync(IEnumerable<long> userIds, long gameweekId);
+        Task<Dictionary<long, int>> GetAllPointsForGameweekAsync(long gameweekId);
+        Task<Dictionary<long, int>> GetAllTotalPointsAsync();
         Task<UserGameweekScore?> GetAsync(long userId, long gameweekId);
         Task<List<UserGameweekScore>> GetByUserIdAsync(long userId);
         Task AddAsync(UserGameweekScore score);

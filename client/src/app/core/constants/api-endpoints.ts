@@ -6,6 +6,7 @@ const SQUAD_BASE = `${environment.apiUrl}/squad`;
 const TRANSFERS_BASE = `${environment.apiUrl}/transfers`;
 const LEAGUES_BASE = `${environment.apiUrl}/leagues`;
 const POINTS_BASE = `${environment.apiUrl}/points`;
+const GAMEWEEKS_BASE = `${environment.apiUrl}/gameweeks`;
 
 export const API_ENDPOINTS = {
   auth: {
@@ -40,5 +41,9 @@ export const API_ENDPOINTS = {
   points: {
     summary: `${POINTS_BASE}/summary`,
     history: `${POINTS_BASE}/history`,
+    squad: `${POINTS_BASE}/squad`,
+  },
+  gameweeks: {
+    deadlines: `${GAMEWEEKS_BASE}/deadlines`,
   },
 };

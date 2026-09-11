@@ -1,11 +1,29 @@
 <button type="button" class="player-card" [class.selected]="player.isSelected" (click)="select.emit()">
-  @if (player.isCaptain) {
-    <span class="badge badge-captain">C</span>
-  }
-  @if (player.isViceCaptain) {
-    <span class="badge badge-vice">V</span>
-  }
-  <span class="player-name">{{ player.webName }}</span>
-  <span class="player-team">{{ player.teamShortName }}</span>
-  <span class="player-price">£{{ player.priceMillions }}m</span>
+  <span class="shirt-wrap">
+    @if (player.isCaptain) {
+      <span class="badge badge-captain">C</span>
+    }
+    @if (player.isViceCaptain) {
+      <span class="badge badge-vice">V</span>
+    }
+    @if (player.removable) {
+      <button
+        type="button"
+        class="badge badge-remove"
+        title="Remove from squad"
+        (click)="$event.stopPropagation(); remove.emit()"
+      >
+        &times;
+      </button>
+    }
+    <app-shirt-icon [teamShortName]="player.teamShortName" />
+    @if (player.points !== undefined) {
+      <span class="points-pill">{{ player.points }} pts</span>
+    }
+  </span>
+  <span class="player-name-bar">{{ player.webName }}</span>
+  <span class="player-info-bar">
+    <span class="player-team">{{ player.teamShortName }}</span>
+    <span class="player-price">£{{ player.priceMillions }}m</span>
+  </span>
 </button>

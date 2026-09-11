@@ -1,8 +1,10 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { PlayerListItem } from '../../../../core/models/player.models';
+import { AuthService } from '../../../../core/services/auth.service';
 import { SquadService } from '../../../../core/services/squad.service';
 import { TransferService } from '../../../../core/services/transfer.service';
+import { AppShell } from '../../../../shared/components/app-shell/app-shell';
 import { PitchPlayer, PitchView } from '../../../../shared/components/pitch-view/pitch-view';
 import { PlayerSearchList } from '../../../../shared/components/player-search-list/player-search-list';
 
@@ -19,13 +21,15 @@ interface PendingTransfer {
 @Component({
   selector: 'app-transfers-page',
   standalone: true,
-  imports: [RouterLink, PitchView, PlayerSearchList],
+  imports: [AppShell, RouterLink, PitchView, PlayerSearchList],
   templateUrl: './transfers-page.html',
   styleUrl: './transfers-page.scss',
 })
 export class TransfersPage implements OnInit {
   private readonly squadService = inject(SquadService);
   private readonly transferService = inject(TransferService);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   readonly squad = this.squadService.squad;
   readonly loading = signal(true);
@@ -34,6 +38,17 @@ export class TransfersPage implements OnInit {
 
   readonly selectedOutId = signal<number | null>(null);
   readonly pendingTransfers = signal<PendingTransfer[]>([]);
+  readonly confirmation = signal<string | null>(null);
+
+  /** Owned squad players not already pending a transfer-out — these get a red × in the search list instead of a disabled ✓. */
+  readonly removableIds = computed(() => {
+    const squad = this.squad();
+    if (!squad) {
+      return [];
+    }
+    const pendingOutIds = new Set(this.pendingTransfers().map((t) => t.playerOutId));
+    return squad.players.filter((p) => !pendingOutIds.has(p.playerId)).map((p) => p.playerId);
+  });
 
   readonly pitchPlayers = computed<PitchPlayer[]>(() => {
     const squad = this.squad();
@@ -148,6 +163,7 @@ export class TransfersPage implements OnInit {
 
     this.saving.set(true);
     this.errorMessage.set(null);
+    this.confirmation.set(null);
 
     this.transferService
       .submitTransfers({
@@ -157,14 +173,23 @@ export class TransfersPage implements OnInit {
         })),
       })
       .subscribe({
-        next: () => {
+        next: (result) => {
           this.saving.set(false);
           this.pendingTransfers.set([]);
+          this.confirmation.set(
+            result.pointsCost > 0
+              ? `${result.transfersMade} transfer${result.transfersMade === 1 ? '' : 's'} made — ${result.paidTransfers} paid, costing ${result.pointsCost} points next gameweek.`
+              : `${result.transfersMade} transfer${result.transfersMade === 1 ? '' : 's'} made — all free, no points cost.`,
+          );
         },
         error: (err) => {
           this.saving.set(false);
           this.errorMessage.set(err.error?.message ?? 'Could not complete transfers.');
         },
       });
+  }
+
+  onLogout(): void {
+    this.authService.logout().subscribe(() => this.router.navigate(['/auth']));
   }
 }

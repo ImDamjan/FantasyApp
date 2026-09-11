@@ -1,5 +1,6 @@
 using System.Text;
 using FantasyApp.Api.BackgroundServices;
+using FantasyApp.Api.Json;
 using FantasyApp.BusinessLogic.Interfaces;
 using FantasyApp.BusinessLogic.Services;
 using FantasyApp.Common.Interfaces;
@@ -100,6 +101,7 @@ builder.Services.AddScoped<ITransferService, TransferService>();
 builder.Services.AddScoped<ILeagueService, LeagueService>();
 builder.Services.AddScoped<IScoringService, ScoringService>();
 builder.Services.AddScoped<IPointsService, PointsService>();
+builder.Services.AddScoped<IGameweekService, GameweekService>();
 
 builder.Services.AddHttpClient<IFplApiClient, FplApiClient>(client =>
 {
@@ -108,7 +110,8 @@ builder.Services.AddHttpClient<IFplApiClient, FplApiClient>(client =>
 
 builder.Services.AddHostedService<FplSyncService>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

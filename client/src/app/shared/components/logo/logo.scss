@@ -9,13 +9,15 @@
   width: 32px;
   height: 32px;
   flex-shrink: 0;
+  object-fit: contain;
 }
 
-.logo__mane {
+.logo__crown {
   fill: var(--fa-green-dark);
 }
 
-.logo__face {
+.logo__face,
+.logo__ear {
   fill: var(--fa-purple);
 }
 
@@ -35,11 +37,12 @@
 }
 
 .logo--light {
-  .logo__mane {
+  .logo__crown {
     fill: var(--fa-green);
   }
 
-  .logo__face {
+  .logo__face,
+  .logo__ear {
     fill: var(--fa-white);
   }
 

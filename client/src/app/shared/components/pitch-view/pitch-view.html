@@ -1,4 +1,11 @@
 <div class="pitch">
+  <div class="pitch-lines" aria-hidden="true">
+    <div class="halfway-line"></div>
+    <div class="centre-circle"></div>
+    <div class="penalty-box penalty-box-top"></div>
+    <div class="penalty-box penalty-box-bottom"></div>
+  </div>
+
   <div class="pitch-row">
     @for (p of goalkeepers; track p.id) {
       <app-player-card
@@ -9,8 +16,11 @@
           isCaptain: p.isCaptain,
           isViceCaptain: p.isViceCaptain,
           isSelected: p.id === selectedId,
+          removable: allowRemove,
+          points: p.points,
         }"
         (select)="onClick(p.id)"
+        (remove)="onCardRemove(p.id)"
       />
     }
   </div>
@@ -24,8 +34,11 @@
           isCaptain: p.isCaptain,
           isViceCaptain: p.isViceCaptain,
           isSelected: p.id === selectedId,
+          removable: allowRemove,
+          points: p.points,
         }"
         (select)="onClick(p.id)"
+        (remove)="onCardRemove(p.id)"
       />
     }
   </div>
@@ -39,8 +52,11 @@
           isCaptain: p.isCaptain,
           isViceCaptain: p.isViceCaptain,
           isSelected: p.id === selectedId,
+          removable: allowRemove,
+          points: p.points,
         }"
         (select)="onClick(p.id)"
+        (remove)="onCardRemove(p.id)"
       />
     }
   </div>
@@ -54,8 +70,11 @@
           isCaptain: p.isCaptain,
           isViceCaptain: p.isViceCaptain,
           isSelected: p.id === selectedId,
+          removable: allowRemove,
+          points: p.points,
         }"
         (select)="onClick(p.id)"
+        (remove)="onCardRemove(p.id)"
       />
     }
   </div>
@@ -73,9 +92,24 @@
           isCaptain: p.isCaptain,
           isViceCaptain: p.isViceCaptain,
           isSelected: p.id === selectedId,
+          removable: allowRemove,
+          points: p.points,
         }"
         (select)="onClick(p.id)"
+        (remove)="onCardRemove(p.id)"
       />
     }
   </div>
 </div>
+
+@if (menuPlayer(); as p) {
+  <app-player-action-menu
+    [player]="p"
+    [allowRemove]="allowRemove"
+    (makeCaptain)="onMakeCaptain()"
+    (makeViceCaptain)="onMakeViceCaptain()"
+    (substitute)="onSubstitute()"
+    (remove)="onRemove()"
+    (close)="closeMenu()"
+  />
+}

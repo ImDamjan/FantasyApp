@@ -1,0 +1,26 @@
+<svg class="shirt-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern [attr.id]="patternId" width="8" height="64" patternUnits="userSpaceOnUse">
+      <rect width="4" height="64" [attr.fill]="kit.primary" />
+      <rect x="4" width="4" height="64" [attr.fill]="kit.secondary" />
+    </pattern>
+  </defs>
+
+  <!-- sleeves -->
+  <path d="M14,12 L2,20 L6,32 L18,24 Z" [attr.fill]="kit.sleeve" stroke="rgba(0,0,0,0.15)" stroke-width="0.5" />
+  <path d="M50,12 L62,20 L58,32 L46,24 Z" [attr.fill]="kit.sleeve" stroke="rgba(0,0,0,0.15)" stroke-width="0.5" />
+
+  <!-- shorts hem -->
+  <path d="M18,52 L46,52 L44,60 L20,60 Z" [attr.fill]="kit.shorts" stroke="rgba(0,0,0,0.15)" stroke-width="0.5" />
+
+  <!-- body -->
+  <path
+    d="M24,6 Q32,13 40,6 L50,14 L44,25 L41,21 L41,58 L23,58 L23,21 L20,25 L14,14 Z"
+    [attr.fill]="kit.pattern === 'stripes' ? 'url(#' + patternId + ')' : kit.primary"
+    stroke="rgba(0,0,0,0.2)"
+    stroke-width="0.6"
+  />
+
+  <!-- collar -->
+  <path d="M27,6.5 Q32,12 37,6.5 L34,10.5 L30,10.5 Z" fill="#ffffff" opacity="0.92" />
+</svg>

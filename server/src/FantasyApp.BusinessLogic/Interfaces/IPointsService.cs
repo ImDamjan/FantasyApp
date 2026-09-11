@@ -6,7 +6,8 @@ namespace FantasyApp.BusinessLogic.Interfaces
 {
     public interface IPointsService
     {
-        Task<PointsSummaryDto> GetSummaryAsync(long userId);
+        Task<PointsSummaryDto> GetSummaryAsync(long userId, string username);
         Task<List<PointsHistoryItemDto>> GetHistoryAsync(long userId);
+        Task<List<SquadPlayerPointsDto>> GetSquadPointsAsync(long userId);
     }
 }

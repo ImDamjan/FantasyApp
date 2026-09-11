@@ -1,0 +1,39 @@
+<div class="menu-backdrop" (click)="close.emit()">
+  <div class="menu-card" (click)="$event.stopPropagation()">
+    <div class="menu-header">
+      <div class="menu-shirt">
+        <app-shirt-icon [teamShortName]="player.teamShortName" />
+      </div>
+      <div>
+        <div class="menu-name">{{ player.webName }}</div>
+        <div class="menu-team">{{ player.teamShortName }} &middot; £{{ player.priceMillions }}m</div>
+      </div>
+      <button type="button" class="menu-close" (click)="close.emit()" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="menu-actions">
+      @if (player.isStarting) {
+        <button type="button" class="menu-action" [class.active]="player.isCaptain" (click)="makeCaptain.emit()">
+          <span class="menu-action-badge captain">C</span>
+          Make captain
+        </button>
+        <button type="button" class="menu-action" [class.active]="player.isViceCaptain" (click)="makeViceCaptain.emit()">
+          <span class="menu-action-badge vice">V</span>
+          Make vice-captain
+        </button>
+      } @else {
+        <p class="menu-hint">Bring this player into the starting XI to make them captain or vice-captain.</p>
+      }
+      <button type="button" class="menu-action" (click)="substitute.emit()">
+        <span class="menu-action-icon">&#8644;</span>
+        {{ player.isStarting ? 'Substitute out' : 'Substitute in' }}
+      </button>
+      @if (allowRemove) {
+        <button type="button" class="menu-action danger" (click)="remove.emit()">
+          <span class="menu-action-icon">&times;</span>
+          Remove from squad
+        </button>
+      }
+    </div>
+  </div>
+</div>

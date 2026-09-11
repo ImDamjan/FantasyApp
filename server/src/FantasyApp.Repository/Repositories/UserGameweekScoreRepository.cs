@@ -33,6 +33,21 @@ namespace FantasyApp.Repository.Repositories
                 .ToDictionaryAsync(s => s.UserId, s => s.NetPoints);
         }
 
+        public async Task<Dictionary<long, int>> GetAllPointsForGameweekAsync(long gameweekId)
+        {
+            return await _dbContext.UserGameweekScores
+                .Where(s => s.GameweekId == gameweekId)
+                .ToDictionaryAsync(s => s.UserId, s => s.NetPoints);
+        }
+
+        public async Task<Dictionary<long, int>> GetAllTotalPointsAsync()
+        {
+            return await _dbContext.UserGameweekScores
+                .GroupBy(s => s.UserId)
+                .Select(g => new { UserId = g.Key, Total = g.Sum(s => s.NetPoints) })
+                .ToDictionaryAsync(x => x.UserId, x => x.Total);
+        }
+
         public async Task<UserGameweekScore?> GetAsync(long userId, long gameweekId)
         {
             return await _dbContext.UserGameweekScores

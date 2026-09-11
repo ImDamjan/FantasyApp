@@ -160,6 +160,23 @@ namespace FantasyApp.BusinessLogic.Services
                 entries[i].Rank = i + 1;
             }
 
+            // Previous rank = rank ordering by points totalled up to (excluding) the current gameweek.
+            // Only meaningful once at least one gameweek has been played before the current one.
+            var hasPreviousGameweek = currentGameweek != null
+                && await _gameweekRepository.GetAllAsync() is { } allGameweeks
+                && allGameweeks.Any(g => g.DeadlineTime < currentGameweek.DeadlineTime);
+
+            if (hasPreviousGameweek)
+            {
+                var previousOrder = entries
+                    .OrderByDescending(e => e.TotalPoints - e.GameweekPoints)
+                    .ToList();
+                for (var i = 0; i < previousOrder.Count; i++)
+                {
+                    previousOrder[i].PreviousRank = i + 1;
+                }
+            }
+
             return ServiceResult<LeagueStandingsDto>.Success(new LeagueStandingsDto
             {
                 LeagueName = league.Name,

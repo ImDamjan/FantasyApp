@@ -21,7 +21,8 @@ namespace FantasyApp.Api.Controllers
         [HttpGet("summary")]
         public async Task<IActionResult> GetSummary()
         {
-            var summary = await _pointsService.GetSummaryAsync(GetUserId());
+            var username = User.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
+            var summary = await _pointsService.GetSummaryAsync(GetUserId(), username);
             return Ok(summary);
         }
 
@@ -30,6 +31,13 @@ namespace FantasyApp.Api.Controllers
         {
             var history = await _pointsService.GetHistoryAsync(GetUserId());
             return Ok(history);
+        }
+
+        [HttpGet("squad")]
+        public async Task<IActionResult> GetSquadPoints()
+        {
+            var squadPoints = await _pointsService.GetSquadPointsAsync(GetUserId());
+            return Ok(squadPoints);
         }
 
         private long GetUserId()

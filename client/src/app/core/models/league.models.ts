@@ -20,6 +20,7 @@ export interface LeagueStandingEntry {
   gameweekPoints: number;
   totalPoints: number;
   rank: number;
+  previousRank: number;
 }
 
 export interface LeagueStandings {

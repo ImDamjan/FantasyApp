@@ -1,0 +1,32 @@
+<div class="shell">
+  <aside class="sidebar">
+    <a routerLink="/" class="sidebar-logo">
+      <app-logo variant="light" />
+    </a>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <span class="nav-icon">&#9733;</span>
+        Points and Rankings
+      </a>
+      <a routerLink="/team" routerLinkActive="active">
+        <span class="nav-icon">&#128085;</span>
+        Pick Team
+      </a>
+      <a routerLink="/transfers" routerLinkActive="active">
+        <span class="nav-icon">&#8644;</span>
+        Transfers
+      </a>
+      <a routerLink="/leagues" routerLinkActive="active">
+        <span class="nav-icon">&#127942;</span>
+        My Leagues
+      </a>
+    </nav>
+
+    <button type="button" class="sidebar-signout" (click)="logout.emit()">Sign out</button>
+  </aside>
+
+  <div class="shell-main">
+    <ng-content />
+  </div>
+</div>

@@ -14,7 +14,10 @@ import { PlayerListItem, PlayerPosition } from '../../../core/models/player.mode
 export class PlayerSearchList implements OnInit {
   @Input() excludeIds: number[] = [];
   @Input() disableAdd = false;
+  /** Ids that should render a red remove (×) button instead of the disabled ✓ (e.g. players already in the squad, on the transfers screen). */
+  @Input() removableIds: number[] = [];
   @Output() addPlayer = new EventEmitter<PlayerListItem>();
+  @Output() removePlayer = new EventEmitter<number>();
 
   private readonly playerService = inject(PlayerService);
   private readonly searchTerm$ = new Subject<string>();
@@ -58,6 +61,10 @@ export class PlayerSearchList implements OnInit {
 
   isExcluded(id: number): boolean {
     return this.excludeIds.includes(id);
+  }
+
+  isRemovable(id: number): boolean {
+    return this.removableIds.includes(id);
   }
 
   private fetch() {

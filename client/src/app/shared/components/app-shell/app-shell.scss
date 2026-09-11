@@ -1,0 +1,97 @@
+.shell {
+  min-height: 100vh;
+  background: var(--fa-shell-bg);
+  display: flex;
+}
+
+.sidebar {
+  flex: 0 0 232px;
+  background: var(--fa-purple-dark);
+  border-right: 1px solid var(--fa-panel-border);
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+
+  @media (max-width: 860px) {
+    position: static;
+    height: auto;
+    flex: 0 0 auto;
+    padding: 1rem;
+  }
+}
+
+.sidebar-logo {
+  display: block;
+  padding: 0 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  @media (max-width: 860px) {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  a {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 8px;
+    color: var(--fa-text-light-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background 0.12s ease, color 0.12s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--fa-text-light);
+    }
+
+    &.active {
+      background: var(--fa-panel-bg-light);
+      color: var(--fa-text-light);
+      box-shadow: inset 3px 0 0 var(--fa-green);
+    }
+  }
+}
+
+.nav-icon {
+  width: 1.2em;
+  display: inline-block;
+  text-align: center;
+}
+
+.sidebar-signout {
+  margin-top: auto;
+  background: none;
+  border: 1px solid var(--fa-panel-border);
+  border-radius: 8px;
+  color: var(--fa-text-light-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--fa-text-light);
+    border-color: var(--fa-text-light-muted);
+  }
+}
+
+.shell-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 1.75rem 2rem 3rem;
+
+  @media (max-width: 640px) {
+    padding: 1.25rem 1rem 2.5rem;
+  }
+}

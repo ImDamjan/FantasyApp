@@ -1,8 +1,9 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Component, OnInit, WritableSignal, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { PlayerListItem, PlayerPosition } from '../../../../core/models/player.models';
+import { AuthService } from '../../../../core/services/auth.service';
 import { SquadService } from '../../../../core/services/squad.service';
+import { AppShell } from '../../../../shared/components/app-shell/app-shell';
 import { PitchPlayer, PitchView } from '../../../../shared/components/pitch-view/pitch-view';
 import { PlayerSearchList } from '../../../../shared/components/player-search-list/player-search-list';
 
@@ -24,15 +25,25 @@ const POSITION_LIMITS: Record<PlayerPosition, number> = {
   Forward: 3,
 };
 
+/** Starting-XI formation limits (min/max players of each position allowed on the pitch). */
+const STARTING_LIMITS: Record<PlayerPosition, { min: number; max: number }> = {
+  Goalkeeper: { min: 1, max: 1 },
+  Defender: { min: 3, max: 5 },
+  Midfielder: { min: 3, max: 5 },
+  Forward: { min: 1, max: 3 },
+};
+
 @Component({
   selector: 'app-pick-team-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, PitchView, PlayerSearchList],
+  imports: [AppShell, PitchView, PlayerSearchList],
   templateUrl: './pick-team-page.html',
   styleUrl: './pick-team-page.scss',
 })
 export class PickTeamPage implements OnInit {
   private readonly squadService = inject(SquadService);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   readonly squad = this.squadService.squad;
   readonly loading = signal(true);
@@ -85,6 +96,12 @@ export class PickTeamPage implements OnInit {
     this.toPitchPlayers(this.lineupPlayers(), this.lineupCaptainId(), this.lineupViceCaptainId()),
   );
 
+  /** Snapshot of the last-saved lineup state, used to show the Save button only when something changed. */
+  private lineupSnapshot = '';
+  readonly lineupDirty = computed(
+    () => this.snapshotLineup(this.lineupPlayers(), this.lineupCaptainId(), this.lineupViceCaptainId()) !== this.lineupSnapshot,
+  );
+
   ngOnInit(): void {
     this.squadService.loadSquad().subscribe({
       next: (squad) => {
@@ -117,6 +134,15 @@ export class PickTeamPage implements OnInit {
     );
     this.lineupCaptainId.set(squad.players.find((p) => p.isCaptain)?.playerId ?? null);
     this.lineupViceCaptainId.set(squad.players.find((p) => p.isViceCaptain)?.playerId ?? null);
+    this.lineupSnapshot = this.snapshotLineup(this.lineupPlayers(), this.lineupCaptainId(), this.lineupViceCaptainId());
+  }
+
+  private snapshotLineup(players: BuildPlayer[], captainId: number | null, viceCaptainId: number | null): string {
+    const starting = players
+      .filter((p) => p.isStarting)
+      .map((p) => p.id)
+      .sort((a, b) => a - b);
+    return JSON.stringify({ starting, captainId, viceCaptainId });
   }
 
   // ---- Build mode: pick 15 players from scratch ----
@@ -181,9 +207,25 @@ export class PickTeamPage implements OnInit {
 
   onBuildPlayerClick(id: number): void {
     const players = [...this.buildPlayers()];
-    const candidateId = this.trySwap(players, this.buildSwapCandidateId(), id);
+    const { candidateId, swapped } = this.trySwap(players, this.buildSwapCandidateId(), id);
     this.buildPlayers.set(players);
     this.buildSwapCandidateId.set(candidateId);
+    if (swapped) {
+      this.transferArmbands(players, swapped, this.buildCaptainId, this.buildViceCaptainId);
+    }
+  }
+
+  onBuildRemovePlayer(id: number): void {
+    this.removeBuildPlayer(id);
+    this.buildStep.set('select');
+  }
+
+  onBuildMakeCaptain(id: number): void {
+    this.setCaptain(this.buildCaptainId, this.buildViceCaptainId, id);
+  }
+
+  onBuildMakeViceCaptain(id: number): void {
+    this.setViceCaptain(this.buildCaptainId, this.buildViceCaptainId, id);
   }
 
   submitBuild(): void {
@@ -224,9 +266,20 @@ export class PickTeamPage implements OnInit {
 
   onLineupPlayerClick(id: number): void {
     const players = [...this.lineupPlayers()];
-    const candidateId = this.trySwap(players, this.lineupSwapCandidateId(), id);
+    const { candidateId, swapped } = this.trySwap(players, this.lineupSwapCandidateId(), id);
     this.lineupPlayers.set(players);
     this.lineupSwapCandidateId.set(candidateId);
+    if (swapped) {
+      this.transferArmbands(players, swapped, this.lineupCaptainId, this.lineupViceCaptainId);
+    }
+  }
+
+  onLineupMakeCaptain(id: number): void {
+    this.setCaptain(this.lineupCaptainId, this.lineupViceCaptainId, id);
+  }
+
+  onLineupMakeViceCaptain(id: number): void {
+    this.setViceCaptain(this.lineupCaptainId, this.lineupViceCaptainId, id);
   }
 
   saveLineup(): void {
@@ -251,7 +304,14 @@ export class PickTeamPage implements OnInit {
           .map((p) => ({ playerId: p.id, order: p.benchOrder ?? 0 })),
       })
       .subscribe({
-        next: () => this.saving.set(false),
+        next: () => {
+          this.saving.set(false);
+          this.lineupSnapshot = this.snapshotLineup(
+            this.lineupPlayers(),
+            this.lineupCaptainId(),
+            this.lineupViceCaptainId(),
+          );
+        },
         error: (err) => {
           this.saving.set(false);
           this.errorMessage.set(err.error?.message ?? 'Could not save lineup.');
@@ -270,6 +330,10 @@ export class PickTeamPage implements OnInit {
         this.errorMessage.set(err.error?.message ?? 'Could not activate chip.');
       },
     });
+  }
+
+  onLogout(): void {
+    this.authService.logout().subscribe(() => this.router.navigate(['/auth']));
   }
 
   // ---- Shared helpers ----
@@ -292,29 +356,117 @@ export class PickTeamPage implements OnInit {
     }));
   }
 
-  /** Mutates `players` in place (swapping starting/bench) and returns the new swap-candidate id. */
-  private trySwap(players: BuildPlayer[], candidateId: number | null, clickedId: number): number | null {
+  /**
+   * Mutates `players` in place (swapping starting/bench) and returns the new swap-candidate id,
+   * plus the [candidateId, clickedId] pair if a swap actually happened (for armband transfer).
+   */
+  private trySwap(
+    players: BuildPlayer[],
+    candidateId: number | null,
+    clickedId: number,
+  ): { candidateId: number | null; swapped: [number, number] | null } {
     if (candidateId === null) {
-      return clickedId;
+      return { candidateId: clickedId, swapped: null };
     }
     if (candidateId === clickedId) {
-      return null;
+      return { candidateId: null, swapped: null };
     }
 
     const a = players.find((p) => p.id === candidateId);
     const b = players.find((p) => p.id === clickedId);
     if (!a || !b || a.isStarting === b.isStarting) {
-      return clickedId;
+      return { candidateId: clickedId, swapped: null };
     }
 
     [a.isStarting, b.isStarting] = [b.isStarting, a.isStarting];
+
+    const formationError = this.findFormationError(players);
+    if (formationError) {
+      // Revert: the swap would break the required formation.
+      [a.isStarting, b.isStarting] = [b.isStarting, a.isStarting];
+      this.errorMessage.set(formationError);
+      return { candidateId: null, swapped: null };
+    }
+
+    this.errorMessage.set(null);
     this.reassignBenchOrder(players);
-    return null;
+    return { candidateId: null, swapped: [a.id, b.id] };
+  }
+
+  /** Whoever just got benched hands their captain/vice-captain armband to whoever just took their starting spot. */
+  private transferArmbands(
+    players: BuildPlayer[],
+    [aId, bId]: [number, number],
+    captainId: WritableSignal<number | null>,
+    viceCaptainId: WritableSignal<number | null>,
+  ): void {
+    const a = players.find((p) => p.id === aId);
+    const b = players.find((p) => p.id === bId);
+    if (!a || !b) {
+      return;
+    }
+    const benched = a.isStarting ? b : a;
+    const starting = a.isStarting ? a : b;
+
+    let newCaptainId = captainId();
+    let newViceCaptainId = viceCaptainId();
+    if (newCaptainId === benched.id) {
+      newCaptainId = starting.id;
+    }
+    if (newViceCaptainId === benched.id) {
+      newViceCaptainId = starting.id;
+    }
+    if (newCaptainId !== null && newCaptainId === newViceCaptainId) {
+      // Both armbands landed on the same incoming player (the benched pair held captain AND vice
+      // between them) — a player can't hold both, so the vice-captain slot is cleared.
+      newViceCaptainId = null;
+    }
+    captainId.set(newCaptainId);
+    viceCaptainId.set(newViceCaptainId);
+  }
+
+  /** A player can't be both captain and vice-captain — promoting the vice-captain rotates the old captain into the vice slot. */
+  private setCaptain(
+    captainId: WritableSignal<number | null>,
+    viceCaptainId: WritableSignal<number | null>,
+    playerId: number,
+  ): void {
+    if (viceCaptainId() === playerId) {
+      viceCaptainId.set(captainId());
+    }
+    captainId.set(playerId);
+  }
+
+  private setViceCaptain(
+    captainId: WritableSignal<number | null>,
+    viceCaptainId: WritableSignal<number | null>,
+    playerId: number,
+  ): void {
+    if (captainId() === playerId) {
+      captainId.set(viceCaptainId());
+    }
+    viceCaptainId.set(playerId);
   }
 
   private reassignBenchOrder(players: BuildPlayer[]): void {
     const bench = players.filter((p) => !p.isStarting);
     bench.forEach((p, i) => (p.benchOrder = i));
     players.filter((p) => p.isStarting).forEach((p) => (p.benchOrder = null));
+  }
+
+  /** Returns an error message if the starting XI among `players` violates formation limits, otherwise null. */
+  private findFormationError(players: BuildPlayer[]): string | null {
+    const starters = players.filter((p) => p.isStarting);
+    for (const position of Object.keys(STARTING_LIMITS) as PlayerPosition[]) {
+      const count = starters.filter((p) => p.position === position).length;
+      const { min, max } = STARTING_LIMITS[position];
+      if (count > max) {
+        return `You can only have ${max} ${position.toLowerCase()}${max === 1 ? '' : 's'} in your starting XI.`;
+      }
+      if (count < min) {
+        return `You need at least ${min} ${position.toLowerCase()}${min === 1 ? '' : 's'} in your starting XI.`;
+      }
+    }
+    return null;
   }
 }

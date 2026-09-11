@@ -1,8 +1,7 @@
+<app-shell (logout)="onLogout()">
 <div class="page">
   <header class="page-header">
-    <a routerLink="/" class="btn btn-link">&larr; Home</a>
-    <h1>My Team</h1>
-    <a routerLink="/transfers" class="btn btn-link">Transfers</a>
+    <h1>Pick Team</h1>
   </header>
 
   @if (errorMessage()) {
@@ -48,39 +47,16 @@
       </div>
     } @else {
       <div class="lineup-layout">
-        <p class="subtitle">Click two players to swap them between starting XI and bench.</p>
+        <p class="subtitle">Tap a shirt to set captain/vice-captain or substitute.</p>
         <app-pitch-view
           [players]="buildPitchPlayers()"
           [selectedId]="buildSwapCandidateId()"
+          [allowRemove]="true"
           (playerClick)="onBuildPlayerClick($event)"
+          (captainChange)="onBuildMakeCaptain($event)"
+          (viceCaptainChange)="onBuildMakeViceCaptain($event)"
+          (removePlayer)="onBuildRemovePlayer($event)"
         />
-
-        <div class="captain-panel">
-          <label>
-            Captain
-            <select
-              [ngModel]="buildCaptainId()"
-              (ngModelChange)="buildCaptainId.set($event)"
-            >
-              <option [ngValue]="null">Select captain</option>
-              @for (p of buildPlayers(); track p.id) {
-                <option [ngValue]="p.id">{{ p.webName }}</option>
-              }
-            </select>
-          </label>
-          <label>
-            Vice-captain
-            <select
-              [ngModel]="buildViceCaptainId()"
-              (ngModelChange)="buildViceCaptainId.set($event)"
-            >
-              <option [ngValue]="null">Select vice-captain</option>
-              @for (p of buildPlayers(); track p.id) {
-                <option [ngValue]="p.id">{{ p.webName }}</option>
-              }
-            </select>
-          </label>
-        </div>
 
         <div class="actions">
           <button type="button" class="btn btn-link" (click)="buildStep.set('select')">&larr; Back to selection</button>
@@ -125,37 +101,23 @@
         </button>
       </div>
 
-      <p class="subtitle">Click two players to swap them between starting XI and bench.</p>
+      <p class="subtitle">Tap a shirt to set captain/vice-captain or substitute.</p>
       <app-pitch-view
         [players]="lineupPitchPlayers()"
         [selectedId]="lineupSwapCandidateId()"
         (playerClick)="onLineupPlayerClick($event)"
+        (captainChange)="onLineupMakeCaptain($event)"
+        (viceCaptainChange)="onLineupMakeViceCaptain($event)"
       />
 
-      <div class="captain-panel">
-        <label>
-          Captain
-          <select [ngModel]="lineupCaptainId()" (ngModelChange)="lineupCaptainId.set($event)">
-            @for (p of lineupPlayers(); track p.id) {
-              <option [ngValue]="p.id">{{ p.webName }}</option>
-            }
-          </select>
-        </label>
-        <label>
-          Vice-captain
-          <select [ngModel]="lineupViceCaptainId()" (ngModelChange)="lineupViceCaptainId.set($event)">
-            @for (p of lineupPlayers(); track p.id) {
-              <option [ngValue]="p.id">{{ p.webName }}</option>
-            }
-          </select>
-        </label>
-      </div>
-
-      <div class="actions">
-        <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="saveLineup()">
-          {{ saving() ? 'Saving...' : 'Save lineup' }}
-        </button>
-      </div>
+      @if (lineupDirty()) {
+        <div class="actions">
+          <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="saveLineup()">
+            {{ saving() ? 'Saving...' : 'Save changes' }}
+          </button>
+        </div>
+      }
     </div>
   }
 </div>
+</app-shell>
