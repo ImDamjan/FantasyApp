@@ -61,10 +61,20 @@ namespace FantasyApp.BusinessLogic.Services
                     rawPoints += points;
                 }
 
-                var paidTransfers = wildcard
-                    ? 0
-                    : await _transferRepository.GetPaidTransferCountAsync(team.Id, gameweekId);
+                var netTransferCount = 0;
+                if (!wildcard)
+                {
+                    var windowTransfers = await _transferRepository.GetByFantasyTeamAndGameweekDescAsync(team.Id, gameweekId);
+                    var finalSquadIds = team.SquadPlayers.Select(sp => sp.PlayerId).ToList();
+                    netTransferCount = TransferCostCalculator.CalculateNetTransferCount(finalSquadIds, windowTransfers);
+                }
+
+                var freeUsed = wildcard ? 0 : Math.Min(netTransferCount, team.FreeTransfersAvailable);
+                var paidTransfers = wildcard ? 0 : Math.Max(0, netTransferCount - team.FreeTransfersAvailable);
                 var transferCost = paidTransfers * 4;
+
+                // The hit only ever comes out of the season-long overall total (NetPoints) — the
+                // gameweek's own RawPoints always stays exactly what the squad scored that week.
                 var netPoints = rawPoints - transferCost;
 
                 var score = await _scoreRepository.GetAsync(team.UserId, gameweekId);
@@ -82,6 +92,7 @@ namespace FantasyApp.BusinessLogic.Services
 
                 if (gameweek.IsFinished && team.LastFreeTransferGameweekId != gameweekId)
                 {
+                    team.FreeTransfersAvailable -= freeUsed;
                     team.FreeTransfersAvailable += 1;
                     team.LastFreeTransferGameweekId = gameweekId;
 

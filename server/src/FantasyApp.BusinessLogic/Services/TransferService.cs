@@ -117,25 +117,8 @@ namespace FantasyApp.BusinessLogic.Services
             var transfersCount = request.Transfers.Count;
             var wildcardActive = fantasyTeam.ActiveChip == ChipType.WildCard;
 
-            int freeUsed;
-            int paidCount;
-            if (wildcardActive)
+            foreach (var item in request.Transfers)
             {
-                freeUsed = transfersCount;
-                paidCount = 0;
-            }
-            else
-            {
-                freeUsed = Math.Min(transfersCount, fantasyTeam.FreeTransfersAvailable);
-                paidCount = transfersCount - freeUsed;
-                fantasyTeam.FreeTransfersAvailable -= freeUsed;
-            }
-
-            var pointsCost = paidCount * 4;
-
-            for (var i = 0; i < request.Transfers.Count; i++)
-            {
-                var item = request.Transfers[i];
                 var squadPlayer = squadPlayerByOutId[item.PlayerOutId];
                 var incoming = playersInById[item.PlayerInId];
 
@@ -145,7 +128,7 @@ namespace FantasyApp.BusinessLogic.Services
                     GameweekId = targetGameweek.Id,
                     PlayerOutId = item.PlayerOutId,
                     PlayerInId = item.PlayerInId,
-                    WasFreeTransfer = wildcardActive || i < freeUsed,
+                    WasFreeTransfer = !wildcardActive,
                     CreatedAt = DateTime.UtcNow
                 });
 
@@ -160,21 +143,41 @@ namespace FantasyApp.BusinessLogic.Services
 
             await _transferRepository.SaveChangesAsync();
 
-            if (pointsCost > 0)
+            // Recompute the cost for the whole transfer window (not just this submission) from
+            // the net difference against the squad as it stood before the window started, so
+            // that swapping a player out and then back in before the deadline costs nothing —
+            // free transfers aren't spent, and any hit, isn't taken from this gameweek's own
+            // score, only from the season-long overall total (see NetPoints below).
+            int freeUsed;
+            int paidCount;
+            if (wildcardActive)
             {
-                // Deduct the hit from the user's overall total immediately, rather than waiting for
-                // the target gameweek to be scored — ScoringService will later recompute this row's
-                // RawPoints/NetPoints from real match stats, but TransferCost carries forward as-is.
-                var score = await _scoreRepository.GetAsync(fantasyTeam.UserId, targetGameweek.Id);
-                if (score == null)
-                {
-                    score = new UserGameweekScore { UserId = fantasyTeam.UserId, GameweekId = targetGameweek.Id };
-                    await _scoreRepository.AddAsync(score);
-                }
-                score.TransferCost += pointsCost;
-                score.NetPoints = score.RawPoints - score.TransferCost;
-                await _scoreRepository.SaveChangesAsync();
+                freeUsed = 0;
+                paidCount = 0;
             }
+            else
+            {
+                var windowTransfers = await _transferRepository.GetByFantasyTeamAndGameweekDescAsync(fantasyTeam.Id, targetGameweek.Id);
+                var finalSquadIds = fantasyTeam.SquadPlayers.Select(sp => sp.PlayerId).ToList();
+                var netTransferCount = TransferCostCalculator.CalculateNetTransferCount(finalSquadIds, windowTransfers);
+                freeUsed = Math.Min(netTransferCount, fantasyTeam.FreeTransfersAvailable);
+                paidCount = Math.Max(0, netTransferCount - fantasyTeam.FreeTransfersAvailable);
+            }
+
+            var pointsCost = paidCount * 4;
+
+            // TransferCost only ever affects the season-long overall total (NetPoints, summed
+            // across gameweeks) — the gameweek's own RawPoints stays exactly what the squad
+            // scored, so "this gameweek's points" never gets reduced by a hit.
+            var score = await _scoreRepository.GetAsync(fantasyTeam.UserId, targetGameweek.Id);
+            if (score == null)
+            {
+                score = new UserGameweekScore { UserId = fantasyTeam.UserId, GameweekId = targetGameweek.Id };
+                await _scoreRepository.AddAsync(score);
+            }
+            score.TransferCost = pointsCost;
+            score.NetPoints = score.RawPoints - score.TransferCost;
+            await _scoreRepository.SaveChangesAsync();
 
             return ServiceResult<TransferResultDto>.Success(new TransferResultDto
             {

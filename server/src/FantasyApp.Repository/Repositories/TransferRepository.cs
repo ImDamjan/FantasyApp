@@ -28,10 +28,12 @@ namespace FantasyApp.Repository.Repositories
                 .ToListAsync();
         }
 
-        public async Task<int> GetPaidTransferCountAsync(long fantasyTeamId, long gameweekId)
+        public async Task<List<Transfer>> GetByFantasyTeamAndGameweekDescAsync(long fantasyTeamId, long gameweekId)
         {
-            return await _dbContext.Transfers.CountAsync(t =>
-                t.FantasyTeamId == fantasyTeamId && t.GameweekId == gameweekId && !t.WasFreeTransfer);
+            return await _dbContext.Transfers
+                .Where(t => t.FantasyTeamId == fantasyTeamId && t.GameweekId == gameweekId)
+                .OrderByDescending(t => t.CreatedAt)
+                .ToListAsync();
         }
 
         public async Task AddAsync(Transfer transfer)
