@@ -82,22 +82,6 @@
   flex-wrap: wrap;
 }
 
-.bench-area {
-  margin-top: 1rem;
-  background: var(--fa-purple-dark);
-  border-radius: 16px;
-  padding: 1rem;
-}
-
-.bench-label {
-  color: var(--fa-white);
-  font-weight: 700;
-  font-size: 0.75rem;
-  margin-bottom: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
 .empty-slot {
   width: 68px;
   display: flex;
@@ -119,12 +103,6 @@
     background: rgba(255, 255, 255, 0.2);
     transform: translateY(-2px);
   }
-
-  &.empty-slot-active {
-    border-style: solid;
-    border-color: var(--fa-cyan);
-    background: rgba(4, 245, 255, 0.16);
-  }
 }
 
 .empty-slot-plus {
@@ -139,5 +117,4 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   opacity: 0.85;
-  text-align: center;
 }

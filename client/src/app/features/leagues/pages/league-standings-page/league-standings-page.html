@@ -6,8 +6,8 @@
     <span></span>
   </header>
 
-  @if (errorMessage()) {
-    <p class="error-banner">{{ errorMessage() }}</p>
+  @if (loadFailed()) {
+    <p class="hint">Could not load standings.</p>
   } @else if (loading()) {
     <p class="hint">Loading standings...</p>
   } @else {

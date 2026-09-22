@@ -16,6 +16,8 @@ export class PlayerSearchList implements OnInit {
   @Input() disableAdd = false;
   /** Ids that should render a red remove (×) button instead of the disabled ✓ (e.g. players already in the squad, on the transfers screen). */
   @Input() removableIds: number[] = [];
+  /** When set, pins the position filter to this value and hides the position dropdown (e.g. adding a player into a specific empty pitch slot). */
+  @Input() lockedPosition: PlayerPosition | null = null;
   @Output() addPlayer = new EventEmitter<PlayerListItem>();
   @Output() removePlayer = new EventEmitter<number>();
 
@@ -32,6 +34,10 @@ export class PlayerSearchList implements OnInit {
   readonly loading = signal(true);
 
   ngOnInit(): void {
+    if (this.lockedPosition) {
+      this.position = this.lockedPosition;
+    }
+
     this.searchTerm$
       .pipe(
         debounceTime(300),

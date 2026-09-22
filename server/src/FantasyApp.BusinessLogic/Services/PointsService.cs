@@ -91,15 +91,20 @@ namespace FantasyApp.BusinessLogic.Services
 
         public async Task<List<SquadPlayerPointsDto>> GetSquadPointsAsync(long userId)
         {
+            var currentGameweek = await _gameweekRepository.GetCurrentAsync();
+            return await GetSquadPointsForGameweekAsync(userId, currentGameweek);
+        }
+
+        private async Task<List<SquadPlayerPointsDto>> GetSquadPointsForGameweekAsync(long userId, Gameweek? gameweek)
+        {
             var fantasyTeam = await _fantasyTeamRepository.GetByUserIdWithSquadAsync(userId);
             if (fantasyTeam == null || !fantasyTeam.HasPickedInitialSquad)
             {
                 return new List<SquadPlayerPointsDto>();
             }
 
-            var currentGameweek = await _gameweekRepository.GetCurrentAsync();
-            var statsByPlayerId = currentGameweek != null
-                ? await _playerGameweekStatRepository.GetForGameweekAsync(currentGameweek.Id)
+            var statsByPlayerId = gameweek != null
+                ? await _playerGameweekStatRepository.GetForGameweekAsync(gameweek.Id)
                 : new Dictionary<long, PlayerGameweekStat>();
 
             var effectiveCaptainPlayerId = ResolveEffectiveCaptain(fantasyTeam, statsByPlayerId);

@@ -8,12 +8,14 @@
   />
 
   <div class="filters">
-    <select class="filter-select" [(ngModel)]="position" (ngModelChange)="search()">
-      <option value="">All positions</option>
-      @for (pos of positions; track pos) {
-        <option [value]="pos">{{ pos }}</option>
-      }
-    </select>
+    @if (!lockedPosition) {
+      <select class="filter-select" [(ngModel)]="position" (ngModelChange)="search()">
+        <option value="">All positions</option>
+        @for (pos of positions; track pos) {
+          <option [value]="pos">{{ pos }}</option>
+        }
+      </select>
+    }
 
     <input
       type="number"

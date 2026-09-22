@@ -4,37 +4,33 @@
     <h1>Pick Team</h1>
   </header>
 
-  @if (errorMessage()) {
-    <p class="error-banner">{{ errorMessage() }}</p>
-  }
-
   @if (loading()) {
     <p class="hint">Loading your team...</p>
   } @else if (!squad()?.hasPickedInitialSquad) {
     <!-- Build mode -->
     @if (buildStep() === 'select') {
-      <div class="build-layout">
-        <div class="build-search">
-          <h2>Pick your squad</h2>
-          <p class="subtitle">
-            {{ buildPlayers().length }} / 15 players &middot; £{{ buildBudgetSpent().toFixed(1) }}m / £100m
-          </p>
-          <app-player-search-list [excludeIds]="buildExcludeIds()" (addPlayer)="onAddBuildPlayer($event)" />
+      <div class="build-pitch-layout">
+        <div class="build-pitch-header">
+          <div>
+            <h2>Pick your squad</h2>
+            <p class="subtitle">
+              {{ buildPlayers().length }} / 15 players &middot; £{{ buildBudgetSpent().toFixed(1) }}m / £100m
+              &middot; tap a + to add a player
+            </p>
+          </div>
+          <button type="button" class="btn btn-link" [disabled]="autoPicking()" (click)="autoPick()">
+            {{ autoPicking() ? 'Auto picking...' : 'Auto Pick' }}
+          </button>
         </div>
 
-        <div class="build-selection">
-          <h2>Your squad</h2>
-          <ul class="selected-list">
-            @for (p of buildPlayers(); track p.id) {
-              <li>
-                <span>{{ p.webName }} <small>({{ p.teamShortName }}, {{ p.position }})</small></span>
-                <span class="row-actions">
-                  <span>£{{ p.priceMillions }}m</span>
-                  <button type="button" class="remove-btn" (click)="removeBuildPlayer(p.id)">&times;</button>
-                </span>
-              </li>
-            }
-          </ul>
+        <app-squad-build-pitch
+          [players]="buildPlayers()"
+          (addSlot)="openSlotSearch($event)"
+          (removePlayer)="removeBuildPlayer($event)"
+        />
+
+        <div class="actions">
+          <span></span>
           <button
             type="button"
             class="btn btn-primary"
@@ -45,12 +41,29 @@
           </button>
         </div>
       </div>
+
+      @if (slotSearchPosition(); as position) {
+        <div class="menu-backdrop" (click)="closeSlotSearch()">
+          <div class="menu-card slot-search-card" (click)="$event.stopPropagation()">
+            <div class="menu-header">
+              <div class="menu-name">Add a {{ position }}</div>
+              <button type="button" class="menu-close" (click)="closeSlotSearch()" aria-label="Close">&times;</button>
+            </div>
+            <app-player-search-list
+              [excludeIds]="buildExcludeIds()"
+              [lockedPosition]="position"
+              (addPlayer)="onSlotAddPlayer($event)"
+            />
+          </div>
+        </div>
+      }
     } @else {
       <div class="lineup-layout">
         <p class="subtitle">Tap a shirt to set captain/vice-captain or substitute.</p>
         <app-pitch-view
           [players]="buildPitchPlayers()"
           [selectedId]="buildSwapCandidateId()"
+          [swapTargetIds]="buildSwapTargetIds()"
           [allowRemove]="true"
           (playerClick)="onBuildPlayerClick($event)"
           (captainChange)="onBuildMakeCaptain($event)"
@@ -79,7 +92,7 @@
           type="button"
           class="btn btn-link"
           [disabled]="squad()?.tripleCaptainUsed || saving()"
-          (click)="activateChip('TripleCaptain')"
+          (click)="requestActivateChip('TripleCaptain')"
         >
           {{ squad()?.activeChip === 'TripleCaptain' ? 'Triple Captain (active)' : 'Triple Captain' }}
         </button>
@@ -87,7 +100,7 @@
           type="button"
           class="btn btn-link"
           [disabled]="squad()?.benchBoostUsed || saving()"
-          (click)="activateChip('BenchBoost')"
+          (click)="requestActivateChip('BenchBoost')"
         >
           {{ squad()?.activeChip === 'BenchBoost' ? 'Bench Boost (active)' : 'Bench Boost' }}
         </button>
@@ -95,16 +108,37 @@
           type="button"
           class="btn btn-link"
           [disabled]="squad()?.wildCardUsed || saving()"
-          (click)="activateChip('WildCard')"
+          (click)="requestActivateChip('WildCard')"
         >
           {{ squad()?.activeChip === 'WildCard' ? 'Wild Card (active)' : 'Wild Card' }}
         </button>
       </div>
 
+      @if (pendingChip(); as chip) {
+        <div class="menu-backdrop" (click)="cancelActivateChip()">
+          <div class="menu-card confirm-card" (click)="$event.stopPropagation()">
+            <div class="menu-header">
+              <div class="menu-name">Activate {{ pendingChipLabel() }}?</div>
+            </div>
+            <p class="confirm-body">
+              Are you sure you want to activate <strong>{{ pendingChipLabel() }}</strong> for this gameweek? This
+              can't be undone once it's used.
+            </p>
+            <div class="confirm-actions">
+              <button type="button" class="btn btn-link" (click)="cancelActivateChip()">Cancel</button>
+              <button type="button" class="btn btn-primary" (click)="confirmActivateChip()">
+                Yes, activate
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
       <p class="subtitle">Tap a shirt to set captain/vice-captain or substitute.</p>
       <app-pitch-view
         [players]="lineupPitchPlayers()"
         [selectedId]="lineupSwapCandidateId()"
+        [swapTargetIds]="lineupSwapTargetIds()"
         (playerClick)="onLineupPlayerClick($event)"
         (captainChange)="onLineupMakeCaptain($event)"
         (viceCaptainChange)="onLineupMakeViceCaptain($event)"
@@ -112,6 +146,9 @@
 
       @if (lineupDirty()) {
         <div class="actions">
+          <button type="button" class="btn btn-link" [disabled]="saving()" (click)="discardLineupChanges()">
+            Discard changes
+          </button>
           <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="saveLineup()">
             {{ saving() ? 'Saving...' : 'Save changes' }}
           </button>

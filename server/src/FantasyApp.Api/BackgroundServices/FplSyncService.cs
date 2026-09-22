@@ -63,7 +63,7 @@ namespace FantasyApp.Api.BackgroundServices
             var gameweekRepository = scope.ServiceProvider.GetRequiredService<IGameweekRepository>();
             var currentGameweek = await gameweekRepository.GetCurrentAsync();
 
-            if (currentGameweek == null || currentGameweek.IsFinished)
+            if (currentGameweek == null)
             {
                 return;
             }

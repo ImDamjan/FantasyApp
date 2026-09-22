@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LeagueStandings } from '../../../../core/models/league.models';
 import { AuthService } from '../../../../core/services/auth.service';
 import { LeagueService } from '../../../../core/services/league.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { AppShell } from '../../../../shared/components/app-shell/app-shell';
 
 @Component({
@@ -16,11 +17,12 @@ export class LeagueStandingsPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly leagueService = inject(LeagueService);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   readonly standings = signal<LeagueStandings | null>(null);
   readonly loading = signal(true);
-  readonly errorMessage = signal<string | null>(null);
+  readonly loadFailed = signal(false);
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -31,7 +33,8 @@ export class LeagueStandingsPage implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        this.errorMessage.set(err.error?.message ?? 'Could not load standings.');
+        this.loadFailed.set(true);
+        this.toastService.error(err.error?.message ?? 'Could not load standings.');
       },
     });
   }

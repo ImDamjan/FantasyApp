@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
 import { LeagueService } from '../../../../core/services/league.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { AppShell } from '../../../../shared/components/app-shell/app-shell';
 
 @Component({
@@ -15,13 +16,13 @@ import { AppShell } from '../../../../shared/components/app-shell/app-shell';
 export class LeaguesPage implements OnInit {
   private readonly leagueService = inject(LeagueService);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   readonly leagues = this.leagueService.myLeagues;
   readonly loading = signal(true);
   readonly creating = signal(false);
   readonly joining = signal(false);
-  readonly errorMessage = signal<string | null>(null);
 
   newLeagueName = '';
   joinCode = '';
@@ -39,7 +40,6 @@ export class LeaguesPage implements OnInit {
     }
 
     this.creating.set(true);
-    this.errorMessage.set(null);
 
     this.leagueService.createLeague({ name: this.newLeagueName.trim() }).subscribe({
       next: () => {
@@ -48,7 +48,7 @@ export class LeaguesPage implements OnInit {
       },
       error: (err) => {
         this.creating.set(false);
-        this.errorMessage.set(err.error?.message ?? 'Could not create league.');
+        this.toastService.error(err.error?.message ?? 'Could not create league.');
       },
     });
   }
@@ -59,7 +59,6 @@ export class LeaguesPage implements OnInit {
     }
 
     this.joining.set(true);
-    this.errorMessage.set(null);
 
     this.leagueService.joinLeague({ joinCode: this.joinCode.trim() }).subscribe({
       next: () => {
@@ -68,9 +67,19 @@ export class LeaguesPage implements OnInit {
       },
       error: (err) => {
         this.joining.set(false);
-        this.errorMessage.set(err.error?.message ?? 'Could not join league.');
+        this.toastService.error(err.error?.message ?? 'Could not join league.');
       },
     });
+  }
+
+  copyJoinCode(event: Event, joinCode: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    navigator.clipboard
+      .writeText(joinCode)
+      .then(() => this.toastService.success('Join code copied to clipboard.'))
+      .catch(() => this.toastService.error('Could not copy join code.'));
   }
 
   onLogout(): void {

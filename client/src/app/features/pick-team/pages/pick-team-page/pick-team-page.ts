@@ -1,11 +1,23 @@
 import { Component, OnInit, WritableSignal, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { PlayerListItem, PlayerPosition } from '../../../../core/models/player.models';
 import { AuthService } from '../../../../core/services/auth.service';
+import { PlayerService } from '../../../../core/services/player.service';
 import { SquadService } from '../../../../core/services/squad.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { AppShell } from '../../../../shared/components/app-shell/app-shell';
 import { PitchPlayer, PitchView } from '../../../../shared/components/pitch-view/pitch-view';
 import { PlayerSearchList } from '../../../../shared/components/player-search-list/player-search-list';
+import { SquadBuildPitch } from '../../../../shared/components/squad-build-pitch/squad-build-pitch';
+
+type ChipKind = 'TripleCaptain' | 'BenchBoost' | 'WildCard';
+
+const CHIP_LABELS: Record<ChipKind, string> = {
+  TripleCaptain: 'Triple Captain',
+  BenchBoost: 'Bench Boost',
+  WildCard: 'Wild Card',
+};
 
 interface BuildPlayer {
   id: number;
@@ -36,19 +48,26 @@ const STARTING_LIMITS: Record<PlayerPosition, { min: number; max: number }> = {
 @Component({
   selector: 'app-pick-team-page',
   standalone: true,
-  imports: [AppShell, PitchView, PlayerSearchList],
+  imports: [AppShell, PitchView, PlayerSearchList, SquadBuildPitch],
   templateUrl: './pick-team-page.html',
   styleUrl: './pick-team-page.scss',
 })
 export class PickTeamPage implements OnInit {
   private readonly squadService = inject(SquadService);
   private readonly authService = inject(AuthService);
+  private readonly playerService = inject(PlayerService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   readonly squad = this.squadService.squad;
   readonly loading = signal(true);
   readonly saving = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  readonly autoPicking = signal(false);
+  readonly pendingChip = signal<ChipKind | null>(null);
+  readonly pendingChipLabel = computed(() => {
+    const chip = this.pendingChip();
+    return chip ? CHIP_LABELS[chip] : '';
+  });
 
   // "build a squad from scratch" mode (no squad picked yet)
   readonly buildPlayers = signal<BuildPlayer[]>([]);
@@ -56,6 +75,8 @@ export class PickTeamPage implements OnInit {
   readonly buildCaptainId = signal<number | null>(null);
   readonly buildViceCaptainId = signal<number | null>(null);
   readonly buildSwapCandidateId = signal<number | null>(null);
+  /** Non-null while the "add player to this empty slot" search overlay is open. */
+  readonly slotSearchPosition = signal<PlayerPosition | null>(null);
 
   readonly buildExcludeIds = computed(() => this.buildPlayers().map((p) => p.id));
   readonly buildCounts = computed(() => {
@@ -86,6 +107,9 @@ export class PickTeamPage implements OnInit {
   readonly buildPitchPlayers = computed(() =>
     this.toPitchPlayers(this.buildPlayers(), this.buildCaptainId(), this.buildViceCaptainId()),
   );
+  readonly buildSwapTargetIds = computed(() =>
+    this.findSwapTargetIds(this.buildPlayers(), this.buildSwapCandidateId()),
+  );
 
   // "edit an existing squad's lineup" mode
   readonly lineupPlayers = signal<BuildPlayer[]>([]);
@@ -95,9 +119,16 @@ export class PickTeamPage implements OnInit {
   readonly lineupPitchPlayers = computed(() =>
     this.toPitchPlayers(this.lineupPlayers(), this.lineupCaptainId(), this.lineupViceCaptainId()),
   );
+  readonly lineupSwapTargetIds = computed(() =>
+    this.findSwapTargetIds(this.lineupPlayers(), this.lineupSwapCandidateId()),
+  );
 
   /** Snapshot of the last-saved lineup state, used to show the Save button only when something changed. */
   private lineupSnapshot = '';
+  /** Deep copy of the last-saved lineup, restored verbatim by "Discard changes". */
+  private lineupSavedPlayers: BuildPlayer[] = [];
+  private lineupSavedCaptainId: number | null = null;
+  private lineupSavedViceCaptainId: number | null = null;
   readonly lineupDirty = computed(
     () => this.snapshotLineup(this.lineupPlayers(), this.lineupCaptainId(), this.lineupViceCaptainId()) !== this.lineupSnapshot,
   );
@@ -134,7 +165,22 @@ export class PickTeamPage implements OnInit {
     );
     this.lineupCaptainId.set(squad.players.find((p) => p.isCaptain)?.playerId ?? null);
     this.lineupViceCaptainId.set(squad.players.find((p) => p.isViceCaptain)?.playerId ?? null);
+    this.captureLineupSavedState();
+  }
+
+  /** Records the current lineup signals as the "last-saved" state that Discard changes reverts to. */
+  private captureLineupSavedState(): void {
     this.lineupSnapshot = this.snapshotLineup(this.lineupPlayers(), this.lineupCaptainId(), this.lineupViceCaptainId());
+    this.lineupSavedPlayers = this.lineupPlayers().map((p) => ({ ...p }));
+    this.lineupSavedCaptainId = this.lineupCaptainId();
+    this.lineupSavedViceCaptainId = this.lineupViceCaptainId();
+  }
+
+  discardLineupChanges(): void {
+    this.lineupPlayers.set(this.lineupSavedPlayers.map((p) => ({ ...p })));
+    this.lineupCaptainId.set(this.lineupSavedCaptainId);
+    this.lineupViceCaptainId.set(this.lineupSavedViceCaptainId);
+    this.lineupSwapCandidateId.set(null);
   }
 
   private snapshotLineup(players: BuildPlayer[], captainId: number | null, viceCaptainId: number | null): string {
@@ -153,19 +199,18 @@ export class PickTeamPage implements OnInit {
       return;
     }
     if (this.buildCounts()[player.position] >= POSITION_LIMITS[player.position]) {
-      this.errorMessage.set(`You already have enough ${player.position.toLowerCase()}s.`);
+      this.toastService.error(`You already have enough ${player.position.toLowerCase()}s.`);
       return;
     }
     if (current.filter((p) => p.teamId === player.teamId).length >= 3) {
-      this.errorMessage.set('You cannot pick more than 3 players from the same club.');
+      this.toastService.error('You cannot pick more than 3 players from the same club.');
       return;
     }
     if (this.buildBudgetSpent() + player.priceMillions > 100) {
-      this.errorMessage.set('That would exceed your £100m budget.');
+      this.toastService.error('That would exceed your £100m budget.');
       return;
     }
 
-    this.errorMessage.set(null);
     this.buildPlayers.set([
       ...current,
       {
@@ -183,6 +228,184 @@ export class PickTeamPage implements OnInit {
 
   removeBuildPlayer(id: number): void {
     this.buildPlayers.set(this.buildPlayers().filter((p) => p.id !== id));
+  }
+
+  openSlotSearch(position: PlayerPosition): void {
+    this.slotSearchPosition.set(position);
+  }
+
+  closeSlotSearch(): void {
+    this.slotSearchPosition.set(null);
+  }
+
+  onSlotAddPlayer(player: PlayerListItem): void {
+    const before = this.buildPlayers().length;
+    this.onAddBuildPlayer(player);
+    if (this.buildPlayers().length > before) {
+      this.closeSlotSearch();
+    }
+  }
+
+  /** Randomly fills all 15 squad slots, spends nearly the full £100m budget, picks a starting XI and a random captain/vice-captain. */
+  autoPick(): void {
+    this.autoPicking.set(true);
+
+    const positions: PlayerPosition[] = ['Goalkeeper', 'Defender', 'Midfielder', 'Forward'];
+    forkJoin(positions.map((position) => this.playerService.getPlayers({ position, pageSize: 200 }))).subscribe({
+      next: ([goalkeepers, defenders, midfielders, forwards]) => {
+        this.autoPicking.set(false);
+
+        const pools: Record<PlayerPosition, PlayerListItem[]> = {
+          Goalkeeper: goalkeepers.players.filter((p) => p.status === 'a'),
+          Defender: defenders.players.filter((p) => p.status === 'a'),
+          Midfielder: midfielders.players.filter((p) => p.status === 'a'),
+          Forward: forwards.players.filter((p) => p.status === 'a'),
+        };
+
+        const squad = this.buildAutoSquad(pools);
+        if (!squad) {
+          this.toastService.error('Could not auto pick a squad. Try again.');
+          return;
+        }
+
+        const byPos = (pos: PlayerPosition) => squad.filter((p) => p.position === pos);
+        const starters = new Set<number>([
+          ...byPos('Goalkeeper').slice(0, 1).map((p) => p.id),
+          ...byPos('Defender').slice(0, 4).map((p) => p.id),
+          ...byPos('Midfielder').slice(0, 4).map((p) => p.id),
+          ...byPos('Forward').slice(0, 2).map((p) => p.id),
+        ]);
+        const withLineup = squad.map((p) => ({ ...p, isStarting: starters.has(p.id) }));
+        this.reassignBenchOrder(withLineup);
+
+        const shuffledStarters = withLineup
+          .filter((p) => p.isStarting)
+          .map((p) => p.id)
+          .sort(() => Math.random() - 0.5);
+        this.buildCaptainId.set(shuffledStarters[0] ?? null);
+        this.buildViceCaptainId.set(shuffledStarters[1] ?? null);
+
+        this.buildPlayers.set(withLineup);
+        this.buildStep.set('lineup');
+      },
+      error: () => {
+        this.autoPicking.set(false);
+        this.toastService.error('Could not auto pick a squad.');
+      },
+    });
+  }
+
+  /**
+   * Randomly assembles a valid 15-player squad (2/5/5/3, max 3 per club, within £100m), then
+   * greedily upgrades random slots to pricier alternatives until the budget is nearly exhausted.
+   * Retries a few times in case an unlucky shuffle can't satisfy the club-limit constraint.
+   */
+  private buildAutoSquad(pools: Record<PlayerPosition, PlayerListItem[]>): BuildPlayer[] | null {
+    const budget = 100;
+    const clubLimit = 3;
+    const positions: PlayerPosition[] = ['Goalkeeper', 'Defender', 'Midfielder', 'Forward'];
+
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const clubCounts = new Map<number, number>();
+      const selected: PlayerListItem[] = [];
+      let ok = true;
+
+      for (const position of positions) {
+        const need = POSITION_LIMITS[position];
+        const sortedByPrice = [...pools[position]].sort((a, b) => a.priceMillions - b.priceMillions);
+        // Bias toward the cheaper 70% of the pool so there's budget room left for the upgrade pass.
+        const cheapPoolSize = Math.max(need, Math.floor(sortedByPrice.length * 0.7));
+        const candidates = this.shuffle(sortedByPrice.slice(0, cheapPoolSize));
+
+        let picked = 0;
+        for (const player of candidates) {
+          if (picked >= need) break;
+          const clubCount = clubCounts.get(player.teamId) ?? 0;
+          if (clubCount >= clubLimit) continue;
+          selected.push(player);
+          clubCounts.set(player.teamId, clubCount + 1);
+          picked++;
+        }
+        if (picked < need) {
+          ok = false;
+          break;
+        }
+      }
+
+      if (!ok) continue;
+
+      const totalCost = selected.reduce((sum, p) => sum + p.priceMillions, 0);
+      if (totalCost > budget) continue;
+
+      this.upgradeTowardsBudget(selected, pools, clubCounts, budget - totalCost, clubLimit);
+
+      return selected.map((p) => ({
+        id: p.id,
+        webName: p.webName,
+        position: p.position,
+        teamId: p.teamId,
+        teamShortName: p.teamShortName,
+        priceMillions: p.priceMillions,
+        isStarting: false,
+        benchOrder: null,
+      }));
+    }
+
+    return null;
+  }
+
+  /** Mutates `selected` in place, swapping in pricier alternatives until `remaining` budget is nearly spent. */
+  private upgradeTowardsBudget(
+    selected: PlayerListItem[],
+    pools: Record<PlayerPosition, PlayerListItem[]>,
+    clubCounts: Map<number, number>,
+    initialRemaining: number,
+    clubLimit: number,
+  ): void {
+    let remaining = Math.round(initialRemaining * 10) / 10;
+    const selectedIds = new Set(selected.map((p) => p.id));
+
+    let guard = 0;
+    while (remaining > 0.05 && guard < 300) {
+      guard++;
+      let improved = false;
+
+      for (const idx of this.shuffle(selected.map((_, i) => i))) {
+        const current = selected[idx];
+        const upgrade = pools[current.position]
+          .filter((p) => !selectedIds.has(p.id))
+          .filter((p) => p.priceMillions > current.priceMillions)
+          .filter((p) => p.priceMillions - current.priceMillions <= remaining + 0.001)
+          .filter((p) => {
+            const clubCount = clubCounts.get(p.teamId) ?? 0;
+            const adjustedClubCount = p.teamId === current.teamId ? clubCount - 1 : clubCount;
+            return adjustedClubCount < clubLimit;
+          })
+          .sort((a, b) => b.priceMillions - a.priceMillions)[0];
+
+        if (!upgrade) continue;
+
+        clubCounts.set(current.teamId, (clubCounts.get(current.teamId) ?? 1) - 1);
+        clubCounts.set(upgrade.teamId, (clubCounts.get(upgrade.teamId) ?? 0) + 1);
+        selectedIds.delete(current.id);
+        selectedIds.add(upgrade.id);
+        remaining = Math.round((remaining - (upgrade.priceMillions - current.priceMillions)) * 10) / 10;
+        selected[idx] = upgrade;
+        improved = true;
+        break;
+      }
+
+      if (!improved) break;
+    }
+  }
+
+  private shuffle<T>(arr: T[]): T[] {
+    const result = [...arr];
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
   }
 
   continueToLineup(): void {
@@ -232,12 +455,11 @@ export class PickTeamPage implements OnInit {
     const captainId = this.buildCaptainId();
     const viceCaptainId = this.buildViceCaptainId();
     if (captainId == null || viceCaptainId == null) {
-      this.errorMessage.set('Pick a captain and a vice-captain.');
+      this.toastService.error('Pick a captain and a vice-captain.');
       return;
     }
 
     this.saving.set(true);
-    this.errorMessage.set(null);
 
     const players = this.buildPlayers();
     this.squadService
@@ -257,7 +479,7 @@ export class PickTeamPage implements OnInit {
         },
         error: (err) => {
           this.saving.set(false);
-          this.errorMessage.set(err.error?.message ?? 'Could not save squad.');
+          this.toastService.error(err.error?.message ?? 'Could not save squad.');
         },
       });
   }
@@ -286,12 +508,11 @@ export class PickTeamPage implements OnInit {
     const captainId = this.lineupCaptainId();
     const viceCaptainId = this.lineupViceCaptainId();
     if (captainId == null || viceCaptainId == null) {
-      this.errorMessage.set('Pick a captain and a vice-captain.');
+      this.toastService.error('Pick a captain and a vice-captain.');
       return;
     }
 
     this.saving.set(true);
-    this.errorMessage.set(null);
 
     const players = this.lineupPlayers();
     this.squadService
@@ -306,28 +527,37 @@ export class PickTeamPage implements OnInit {
       .subscribe({
         next: () => {
           this.saving.set(false);
-          this.lineupSnapshot = this.snapshotLineup(
-            this.lineupPlayers(),
-            this.lineupCaptainId(),
-            this.lineupViceCaptainId(),
-          );
+          this.captureLineupSavedState();
+          this.toastService.success('Lineup saved.');
         },
         error: (err) => {
           this.saving.set(false);
-          this.errorMessage.set(err.error?.message ?? 'Could not save lineup.');
+          this.toastService.error(err.error?.message ?? 'Could not save lineup.');
         },
       });
   }
 
-  activateChip(chip: 'TripleCaptain' | 'BenchBoost' | 'WildCard'): void {
-    this.saving.set(true);
-    this.errorMessage.set(null);
+  requestActivateChip(chip: ChipKind): void {
+    this.pendingChip.set(chip);
+  }
 
+  cancelActivateChip(): void {
+    this.pendingChip.set(null);
+  }
+
+  confirmActivateChip(): void {
+    const chip = this.pendingChip();
+    if (!chip) {
+      return;
+    }
+    this.pendingChip.set(null);
+
+    this.saving.set(true);
     this.squadService.activateChip(chip).subscribe({
       next: () => this.saving.set(false),
       error: (err) => {
         this.saving.set(false);
-        this.errorMessage.set(err.error?.message ?? 'Could not activate chip.');
+        this.toastService.error(err.error?.message ?? 'Could not activate chip.');
       },
     });
   }
@@ -384,11 +614,10 @@ export class PickTeamPage implements OnInit {
     if (formationError) {
       // Revert: the swap would break the required formation.
       [a.isStarting, b.isStarting] = [b.isStarting, a.isStarting];
-      this.errorMessage.set(formationError);
+      this.toastService.error(formationError);
       return { candidateId: null, swapped: null };
     }
 
-    this.errorMessage.set(null);
     this.reassignBenchOrder(players);
     return { candidateId: null, swapped: [a.id, b.id] };
   }
@@ -468,5 +697,33 @@ export class PickTeamPage implements OnInit {
       }
     }
     return null;
+  }
+
+  /**
+   * Given a swap `candidateId` (or null), returns the ids of every other player that could
+   * legally be swapped with it — i.e. is on the opposite side of the starting/bench line and,
+   * after the swap, still leaves a valid starting XI (any position can replace any other, as
+   * long as the per-position min/max in `STARTING_LIMITS` still holds).
+   */
+  private findSwapTargetIds(players: BuildPlayer[], candidateId: number | null): number[] {
+    if (candidateId === null) {
+      return [];
+    }
+    const candidate = players.find((p) => p.id === candidateId);
+    if (!candidate) {
+      return [];
+    }
+
+    return players
+      .filter((p) => p.id !== candidateId && p.isStarting !== candidate.isStarting)
+      .filter((p) => {
+        const simulated = players.map((sp) => {
+          if (sp.id === candidateId) return { ...sp, isStarting: p.isStarting };
+          if (sp.id === p.id) return { ...sp, isStarting: candidate.isStarting };
+          return sp;
+        });
+        return this.findFormationError(simulated) === null;
+      })
+      .map((p) => p.id);
   }
 }

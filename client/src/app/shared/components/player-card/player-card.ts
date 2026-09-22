@@ -8,6 +8,7 @@ export interface PlayerCardData {
   isCaptain?: boolean;
   isViceCaptain?: boolean;
   isSelected?: boolean;
+  isSwapTarget?: boolean;
   removable?: boolean;
   points?: number;
 }

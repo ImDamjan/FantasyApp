@@ -4,10 +4,6 @@
     <h1>My Leagues</h1>
   </header>
 
-  @if (errorMessage()) {
-    <p class="error-banner">{{ errorMessage() }}</p>
-  }
-
   <div class="forms-row">
     <div class="form-card">
       <h2>Create a league</h2>
@@ -47,6 +43,14 @@
               {{ league.memberCount }} members
               @if (!league.isOfficial) {
                 &middot; code: {{ league.joinCode }}
+                <button
+                  type="button"
+                  class="copy-code-btn"
+                  title="Copy join code"
+                  (click)="copyJoinCode($event, league.joinCode)"
+                >
+                  &#128203;
+                </button>
               }
             </span>
           </a>

@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { passwordMatchValidator } from '../../../../core/validators/password-match.validator';
 import { FormField } from '../../../../shared/components/form-field/form-field';
 import { Logo } from '../../../../shared/components/logo/logo';
@@ -17,6 +18,7 @@ import { Logo } from '../../../../shared/components/logo/logo';
 export class ResetPasswordPage {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
 
   private readonly email = this.route.snapshot.queryParamMap.get('email') ?? '';
@@ -25,7 +27,6 @@ export class ResetPasswordPage {
   readonly linkInvalid = !this.email || !this.token;
   readonly loading = signal(false);
   readonly submitted = signal(false);
-  readonly errorMessage = signal<string | null>(null);
 
   readonly form = this.fb.nonNullable.group(
     {
@@ -42,14 +43,13 @@ export class ResetPasswordPage {
     }
 
     this.loading.set(true);
-    this.errorMessage.set(null);
 
     this.authService
       .resetPassword({ email: this.email, token: this.token, ...this.form.getRawValue() })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: () => this.submitted.set(true),
-        error: (err) => this.errorMessage.set(err?.error?.message ?? 'Password reset failed.'),
+        error: (err) => this.toastService.error(err?.error?.message ?? 'Password reset failed.'),
       });
   }
 }

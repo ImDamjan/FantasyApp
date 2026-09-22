@@ -1,4 +1,10 @@
-<button type="button" class="player-card" [class.selected]="player.isSelected" (click)="select.emit()">
+<button
+  type="button"
+  class="player-card"
+  [class.selected]="player.isSelected"
+  [class.swap-target]="player.isSwapTarget"
+  (click)="select.emit()"
+>
   <span class="shirt-wrap">
     @if (player.isCaptain) {
       <span class="badge badge-captain">C</span>

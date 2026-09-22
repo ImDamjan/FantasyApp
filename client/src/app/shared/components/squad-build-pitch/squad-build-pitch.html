@@ -1,0 +1,31 @@
+<div class="pitch">
+  <div class="pitch-lines" aria-hidden="true">
+    <div class="halfway-line"></div>
+    <div class="centre-circle"></div>
+    <div class="penalty-box penalty-box-top"></div>
+    <div class="penalty-box penalty-box-bottom"></div>
+  </div>
+
+  @for (row of rows; track row.position) {
+    <div class="pitch-row">
+      @for (slot of slotsFor(row); track slot?.id ?? $index) {
+        @if (slot) {
+          <app-player-card
+            [player]="{
+              webName: slot.webName,
+              teamShortName: slot.teamShortName,
+              priceMillions: slot.priceMillions,
+              removable: true,
+            }"
+            (remove)="removePlayer.emit(slot.id)"
+          />
+        } @else {
+          <button type="button" class="empty-slot" (click)="addSlot.emit(row.position)">
+            <span class="empty-slot-plus">+</span>
+            <span class="empty-slot-label">{{ row.label }}</span>
+          </button>
+        }
+      }
+    </div>
+  }
+</div>

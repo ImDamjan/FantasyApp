@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { passwordMatchValidator } from '../../../../core/validators/password-match.validator';
 import { FormField } from '../../../../shared/components/form-field/form-field';
 import { Logo } from '../../../../shared/components/logo/logo';
@@ -18,11 +19,10 @@ type AuthMode = 'login' | 'register';
 })
 export class AuthPage {
   private readonly fb = inject(FormBuilder);
+  private readonly toastService = inject(ToastService);
 
   readonly mode = signal<AuthMode>('login');
   readonly loading = signal(false);
-  readonly loginError = signal<string | null>(null);
-  readonly registerError = signal<string | null>(null);
 
   readonly loginForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -46,8 +46,6 @@ export class AuthPage {
 
   setMode(mode: AuthMode): void {
     this.mode.set(mode);
-    this.loginError.set(null);
-    this.registerError.set(null);
   }
 
   onLogin(): void {
@@ -57,14 +55,13 @@ export class AuthPage {
     }
 
     this.loading.set(true);
-    this.loginError.set(null);
 
     this.authService
       .login(this.loginForm.getRawValue())
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: () => this.router.navigate(['/']),
-        error: (err) => this.loginError.set(err?.error?.message ?? 'Login failed.'),
+        error: (err) => this.toastService.error(err?.error?.message ?? 'Login failed.'),
       });
   }
 
@@ -75,14 +72,13 @@ export class AuthPage {
     }
 
     this.loading.set(true);
-    this.registerError.set(null);
 
     this.authService
       .register(this.registerForm.getRawValue())
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: () => this.router.navigate(['/']),
-        error: (err) => this.registerError.set(err?.error?.message ?? 'Registration failed.'),
+        error: (err) => this.toastService.error(err?.error?.message ?? 'Registration failed.'),
       });
   }
 }

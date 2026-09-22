@@ -4,13 +4,6 @@
     <h1>Transfers</h1>
   </header>
 
-  @if (errorMessage()) {
-    <p class="error-banner">{{ errorMessage() }}</p>
-  }
-  @if (confirmation()) {
-    <p class="confirmation-banner">{{ confirmation() }}</p>
-  }
-
   @if (loading()) {
     <p class="hint">Loading your team...</p>
   } @else if (!squad()?.hasPickedInitialSquad) {
@@ -27,11 +20,12 @@
         </div>
 
         <p class="subtitle">
-          Click a player (or the × on their shirt) to replace them, then pick their replacement from the list.
+          Click a player (or the × on their shirt) to replace them — mark as many as you like, then pick a
+          replacement for each from the list.
         </p>
         <app-pitch-view
           [players]="pitchPlayers()"
-          [selectedId]="selectedOutId()"
+          [selectedId]="activeOutId()"
           [useActionMenu]="false"
           [allowRemove]="true"
           (playerClick)="onPitchPlayerClick($event)"
@@ -55,11 +49,11 @@
       </div>
 
       <div class="search-column">
-        <h2>{{ selectedOutId() ? 'Choose a replacement' : 'Select a player on the pitch first' }}</h2>
+        <h2>{{ activeOutId() ? 'Choose a replacement' : 'Select a player on the pitch first' }}</h2>
         <app-player-search-list
           [excludeIds]="excludeIds()"
           [removableIds]="removableIds()"
-          [disableAdd]="selectedOutId() === null"
+          [disableAdd]="activeOutId() === null"
           (addPlayer)="onAddReplacement($event)"
           (removePlayer)="onPitchPlayerClick($event)"
         />

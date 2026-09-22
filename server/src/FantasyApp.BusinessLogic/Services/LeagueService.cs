@@ -102,6 +102,8 @@ namespace FantasyApp.BusinessLogic.Services
 
         public async Task<List<LeagueDto>> GetMyLeaguesAsync(long userId)
         {
+            await EnsureOfficialLeagueMembershipAsync(userId);
+
             var leagues = await _leagueRepository.GetUserLeaguesAsync(userId);
             var result = new List<LeagueDto>();
 
@@ -182,6 +184,32 @@ namespace FantasyApp.BusinessLogic.Services
                 LeagueName = league.Name,
                 Entries = entries
             });
+        }
+
+        /// <summary>
+        /// Backfills membership in the seeded "Overall League" for accounts created before
+        /// auto-join-on-register existed, so it always shows up in "My Leagues".
+        /// </summary>
+        private async Task EnsureOfficialLeagueMembershipAsync(long userId)
+        {
+            var officialLeague = await _leagueRepository.GetOfficialLeagueAsync();
+            if (officialLeague == null)
+            {
+                return;
+            }
+
+            if (await _leagueRepository.IsMemberAsync(officialLeague.Id, userId))
+            {
+                return;
+            }
+
+            await _leagueRepository.AddMembershipAsync(new LeagueMembership
+            {
+                LeagueId = officialLeague.Id,
+                UserId = userId,
+                JoinedAt = DateTime.UtcNow
+            });
+            await _leagueRepository.SaveChangesAsync();
         }
 
         private async Task<string> GenerateUniqueJoinCodeAsync()

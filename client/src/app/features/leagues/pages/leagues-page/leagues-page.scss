@@ -14,14 +14,6 @@
   }
 }
 
-.error-banner {
-  background: rgba(214, 0, 61, 0.16);
-  color: #ff6b93;
-  padding: 0.7rem 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  font-size: 0.85rem;
-}
 
 .hint {
   color: var(--fa-text-light-muted);
@@ -114,4 +106,19 @@
 .league-meta {
   font-size: 0.78rem;
   color: var(--fa-text-light-muted);
+}
+
+.copy-code-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.1rem 0.3rem;
+  margin-left: 0.15rem;
+  opacity: 0.75;
+  transition: opacity 0.12s ease;
+
+  &:hover {
+    opacity: 1;
+  }
 }

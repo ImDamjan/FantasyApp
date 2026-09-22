@@ -15,17 +15,20 @@ namespace FantasyApp.BusinessLogic.Services
         private readonly IPlayerRepository _playerRepository;
         private readonly IGameweekRepository _gameweekRepository;
         private readonly ITransferRepository _transferRepository;
+        private readonly IUserGameweekScoreRepository _scoreRepository;
 
         public TransferService(
             IFantasyTeamRepository fantasyTeamRepository,
             IPlayerRepository playerRepository,
             IGameweekRepository gameweekRepository,
-            ITransferRepository transferRepository)
+            ITransferRepository transferRepository,
+            IUserGameweekScoreRepository scoreRepository)
         {
             _fantasyTeamRepository = fantasyTeamRepository;
             _playerRepository = playerRepository;
             _gameweekRepository = gameweekRepository;
             _transferRepository = transferRepository;
+            _scoreRepository = scoreRepository;
         }
 
         public async Task<ServiceResult<TransferResultDto>> SubmitTransfersAsync(long userId, SubmitTransfersRequestDto request)
@@ -156,6 +159,22 @@ namespace FantasyApp.BusinessLogic.Services
             fantasyTeam.BudgetRemainingTenths -= totalCostDelta;
 
             await _transferRepository.SaveChangesAsync();
+
+            if (pointsCost > 0)
+            {
+                // Deduct the hit from the user's overall total immediately, rather than waiting for
+                // the target gameweek to be scored — ScoringService will later recompute this row's
+                // RawPoints/NetPoints from real match stats, but TransferCost carries forward as-is.
+                var score = await _scoreRepository.GetAsync(fantasyTeam.UserId, targetGameweek.Id);
+                if (score == null)
+                {
+                    score = new UserGameweekScore { UserId = fantasyTeam.UserId, GameweekId = targetGameweek.Id };
+                    await _scoreRepository.AddAsync(score);
+                }
+                score.TransferCost += pointsCost;
+                score.NetPoints = score.RawPoints - score.TransferCost;
+                await _scoreRepository.SaveChangesAsync();
+            }
 
             return ServiceResult<TransferResultDto>.Success(new TransferResultDto
             {

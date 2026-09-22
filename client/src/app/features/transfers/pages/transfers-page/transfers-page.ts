@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { PlayerListItem } from '../../../../core/models/player.models';
 import { AuthService } from '../../../../core/services/auth.service';
 import { SquadService } from '../../../../core/services/squad.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { TransferService } from '../../../../core/services/transfer.service';
 import { AppShell } from '../../../../shared/components/app-shell/app-shell';
 import { PitchPlayer, PitchView } from '../../../../shared/components/pitch-view/pitch-view';
@@ -29,16 +30,18 @@ export class TransfersPage implements OnInit {
   private readonly squadService = inject(SquadService);
   private readonly transferService = inject(TransferService);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   readonly squad = this.squadService.squad;
   readonly loading = signal(true);
   readonly saving = signal(false);
-  readonly errorMessage = signal<string | null>(null);
 
-  readonly selectedOutId = signal<number | null>(null);
+  /** Players marked "out" on the pitch that don't have a replacement picked yet — several can be marked at once. */
+  readonly outIds = signal<number[]>([]);
+  /** Which of `outIds` the replacement search list is currently targeting. */
+  readonly activeOutId = signal<number | null>(null);
   readonly pendingTransfers = signal<PendingTransfer[]>([]);
-  readonly confirmation = signal<string | null>(null);
 
   /** Owned squad players not already pending a transfer-out — these get a red × in the search list instead of a disabled ✓. */
   readonly removableIds = computed(() => {
@@ -57,6 +60,7 @@ export class TransfersPage implements OnInit {
     }
 
     const pending = this.pendingTransfers();
+    const outIds = this.outIds();
     return squad.players.map((p) => {
       const swap = pending.find((t) => t.playerOutId === p.playerId);
       return {
@@ -69,6 +73,7 @@ export class TransfersPage implements OnInit {
         benchOrder: p.benchOrder,
         isCaptain: p.isCaptain,
         isViceCaptain: p.isViceCaptain,
+        isVacant: !swap && outIds.includes(p.playerId),
       };
     });
   });
@@ -108,20 +113,33 @@ export class TransfersPage implements OnInit {
   onPitchPlayerClick(id: number): void {
     const alreadyPending = this.pendingTransfers().find((t) => t.playerOutId === id);
     if (alreadyPending) {
-      this.pendingTransfers.set(this.pendingTransfers().filter((t) => t.playerOutId !== id));
-      if (this.selectedOutId() === id) {
-        this.selectedOutId.set(null);
+      this.removePending(id);
+      return;
+    }
+
+    const currentOutIds = this.outIds();
+    if (currentOutIds.includes(id)) {
+      if (this.activeOutId() === id) {
+        // Clicking the already-active vacant slot again restores that player to the squad.
+        const updated = currentOutIds.filter((x) => x !== id);
+        this.outIds.set(updated);
+        this.activeOutId.set(updated[updated.length - 1] ?? null);
+      } else {
+        // Clicking a different vacant slot just refocuses the replacement search on it.
+        this.activeOutId.set(id);
       }
       return;
     }
 
-    this.selectedOutId.set(this.selectedOutId() === id ? null : id);
+    // Not marked yet: mark this player out (on top of any others already marked) and focus it.
+    this.outIds.set([...currentOutIds, id]);
+    this.activeOutId.set(id);
   }
 
   onAddReplacement(player: PlayerListItem): void {
-    const outId = this.selectedOutId();
+    const outId = this.activeOutId();
     if (outId == null) {
-      this.errorMessage.set('Click a player on the pitch first to choose who to replace.');
+      this.toastService.error('Click a player on the pitch first to choose who to replace.');
       return;
     }
 
@@ -132,11 +150,10 @@ export class TransfersPage implements OnInit {
     }
 
     if (outPlayer.position !== player.position) {
-      this.errorMessage.set(`Replacement must be a ${outPlayer.position.toLowerCase()}.`);
+      this.toastService.error(`Replacement must be a ${outPlayer.position.toLowerCase()}.`);
       return;
     }
 
-    this.errorMessage.set(null);
     this.pendingTransfers.set([
       ...this.pendingTransfers(),
       {
@@ -149,11 +166,17 @@ export class TransfersPage implements OnInit {
         playerInPrice: player.priceMillions,
       },
     ]);
-    this.selectedOutId.set(null);
+
+    const remainingOutIds = this.outIds().filter((x) => x !== outId);
+    this.outIds.set(remainingOutIds);
+    this.activeOutId.set(remainingOutIds[remainingOutIds.length - 1] ?? null);
   }
 
   removePending(playerOutId: number): void {
     this.pendingTransfers.set(this.pendingTransfers().filter((t) => t.playerOutId !== playerOutId));
+    if (this.activeOutId() === playerOutId) {
+      this.activeOutId.set(null);
+    }
   }
 
   confirmTransfers(): void {
@@ -162,8 +185,6 @@ export class TransfersPage implements OnInit {
     }
 
     this.saving.set(true);
-    this.errorMessage.set(null);
-    this.confirmation.set(null);
 
     this.transferService
       .submitTransfers({
@@ -176,15 +197,17 @@ export class TransfersPage implements OnInit {
         next: (result) => {
           this.saving.set(false);
           this.pendingTransfers.set([]);
-          this.confirmation.set(
+          this.outIds.set([]);
+          this.activeOutId.set(null);
+          this.toastService.success(
             result.pointsCost > 0
-              ? `${result.transfersMade} transfer${result.transfersMade === 1 ? '' : 's'} made — ${result.paidTransfers} paid, costing ${result.pointsCost} points next gameweek.`
+              ? `${result.transfersMade} transfer${result.transfersMade === 1 ? '' : 's'} made — ${result.paidTransfers} paid, ${result.pointsCost} points deducted from your overall total.`
               : `${result.transfersMade} transfer${result.transfersMade === 1 ? '' : 's'} made — all free, no points cost.`,
           );
         },
         error: (err) => {
           this.saving.set(false);
-          this.errorMessage.set(err.error?.message ?? 'Could not complete transfers.');
+          this.toastService.error(err.error?.message ?? 'Could not complete transfers.');
         },
       });
   }
