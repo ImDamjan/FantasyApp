@@ -15,8 +15,8 @@
       <div class="pitch-column">
         <div class="squad-summary">
           <span>Budget after transfers: £{{ projectedBudget().toFixed(1) }}m</span>
-          <span>Free transfers: {{ squad()?.freeTransfersAvailable }}</span>
-          <span [class.cost]="pointsCostPreview() > 0">Cost: -{{ pointsCostPreview() }} pts</span>
+          <span>Free transfers: {{ squad()?.unlimitedTransfers ? 'Unlimited' : squad()?.freeTransfersAvailable }}</span>
+          <span [class.cost]="pointsCostPreview() > 0">Cost: {{ pointsCostPreview() > 0 ? -pointsCostPreview() : 0 }} pts</span>
         </div>
 
         <p class="subtitle">

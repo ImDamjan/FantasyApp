@@ -16,23 +16,28 @@ namespace FantasyApp.BusinessLogic.Services
         private readonly IGameweekRepository _gameweekRepository;
         private readonly ITransferRepository _transferRepository;
         private readonly IUserGameweekScoreRepository _scoreRepository;
+        private readonly IGameweekSnapshotService _snapshotService;
 
         public TransferService(
             IFantasyTeamRepository fantasyTeamRepository,
             IPlayerRepository playerRepository,
             IGameweekRepository gameweekRepository,
             ITransferRepository transferRepository,
-            IUserGameweekScoreRepository scoreRepository)
+            IUserGameweekScoreRepository scoreRepository,
+            IGameweekSnapshotService snapshotService)
         {
             _fantasyTeamRepository = fantasyTeamRepository;
             _playerRepository = playerRepository;
             _gameweekRepository = gameweekRepository;
             _transferRepository = transferRepository;
             _scoreRepository = scoreRepository;
+            _snapshotService = snapshotService;
         }
 
         public async Task<ServiceResult<TransferResultDto>> SubmitTransfersAsync(long userId, SubmitTransfersRequestDto request)
         {
+            await _snapshotService.EnsureSnapshotsAsync();
+
             var fantasyTeam = await _fantasyTeamRepository.GetByUserIdWithSquadAsync(userId);
             if (fantasyTeam == null || !fantasyTeam.HasPickedInitialSquad)
             {
@@ -108,29 +113,28 @@ namespace FantasyApp.BusinessLogic.Services
                 return ServiceResult<TransferResultDto>.Failure("Not enough budget for these transfers.");
             }
 
-            var targetGameweek = await _gameweekRepository.GetNextAsync() ?? await _gameweekRepository.GetCurrentAsync();
+            var targetGameweek = await _gameweekRepository.GetNextAsync();
             if (targetGameweek == null)
             {
-                return ServiceResult<TransferResultDto>.Failure("Season data is not available yet.");
+                return ServiceResult<TransferResultDto>.Failure("There are no more gameweeks this season.");
             }
 
-            var transfersCount = request.Transfers.Count;
-            var wildcardActive = fantasyTeam.ActiveChip == ChipType.WildCard;
-
+            var newTransfers = new List<Transfer>();
             foreach (var item in request.Transfers)
             {
                 var squadPlayer = squadPlayerByOutId[item.PlayerOutId];
                 var incoming = playersInById[item.PlayerInId];
 
-                await _transferRepository.AddAsync(new Transfer
+                var transfer = new Transfer
                 {
                     FantasyTeamId = fantasyTeam.Id,
                     GameweekId = targetGameweek.Id,
                     PlayerOutId = item.PlayerOutId,
                     PlayerInId = item.PlayerInId,
-                    WasFreeTransfer = !wildcardActive,
                     CreatedAt = DateTime.UtcNow
-                });
+                };
+                newTransfers.Add(transfer);
+                await _transferRepository.AddAsync(transfer);
 
                 squadPlayer.PlayerId = incoming.Id;
                 squadPlayer.Player = incoming;
@@ -139,53 +143,37 @@ namespace FantasyApp.BusinessLogic.Services
                 squadPlayer.IsViceCaptain = false;
             }
 
+            SquadService.ReassignMissingArmbands(fantasyTeam.SquadPlayers);
+
             fantasyTeam.BudgetRemainingTenths -= totalCostDelta;
 
             await _transferRepository.SaveChangesAsync();
 
-            // Recompute the cost for the whole transfer window (not just this submission) from
-            // the net difference against the squad as it stood before the window started, so
-            // that swapping a player out and then back in before the deadline costs nothing —
-            // free transfers aren't spent, and any hit, isn't taken from this gameweek's own
-            // score, only from the season-long overall total (see NetPoints below).
-            int freeUsed;
-            int paidCount;
-            if (wildcardActive)
+            var windowTransfers = await _transferRepository.GetByFantasyTeamAndGameweekDescAsync(fantasyTeam.Id, targetGameweek.Id);
+            var allowance = TransferAllowance.Calculate(fantasyTeam, targetGameweek.Id, windowTransfers);
+
+            foreach (var transfer in newTransfers)
             {
-                freeUsed = 0;
-                paidCount = 0;
-            }
-            else
-            {
-                var windowTransfers = await _transferRepository.GetByFantasyTeamAndGameweekDescAsync(fantasyTeam.Id, targetGameweek.Id);
-                var finalSquadIds = fantasyTeam.SquadPlayers.Select(sp => sp.PlayerId).ToList();
-                var netTransferCount = TransferCostCalculator.CalculateNetTransferCount(finalSquadIds, windowTransfers);
-                freeUsed = Math.Min(netTransferCount, fantasyTeam.FreeTransfersAvailable);
-                paidCount = Math.Max(0, netTransferCount - fantasyTeam.FreeTransfersAvailable);
+                transfer.WasFreeTransfer = allowance.PaidTransfers == 0;
             }
 
-            var pointsCost = paidCount * 4;
-
-            // TransferCost only ever affects the season-long overall total (NetPoints, summed
-            // across gameweeks) — the gameweek's own RawPoints stays exactly what the squad
-            // scored, so "this gameweek's points" never gets reduced by a hit.
             var score = await _scoreRepository.GetAsync(fantasyTeam.UserId, targetGameweek.Id);
             if (score == null)
             {
                 score = new UserGameweekScore { UserId = fantasyTeam.UserId, GameweekId = targetGameweek.Id };
                 await _scoreRepository.AddAsync(score);
             }
-            score.TransferCost = pointsCost;
-            score.NetPoints = score.RawPoints - score.TransferCost;
+            score.TransferCost = allowance.PointsCost;
+            score.NetPoints = score.RawPoints;
             await _scoreRepository.SaveChangesAsync();
 
             return ServiceResult<TransferResultDto>.Success(new TransferResultDto
             {
-                Squad = SquadService.ToSquadDto(fantasyTeam),
-                TransfersMade = transfersCount,
-                FreeTransfersUsed = freeUsed,
-                PaidTransfers = paidCount,
-                PointsCost = pointsCost
+                Squad = SquadService.ToSquadDto(fantasyTeam, allowance),
+                TransfersMade = request.Transfers.Count,
+                FreeTransfersUsed = allowance.FreeTransfersUsed,
+                PaidTransfers = allowance.PaidTransfers,
+                PointsCost = allowance.PointsCost
             });
         }
 

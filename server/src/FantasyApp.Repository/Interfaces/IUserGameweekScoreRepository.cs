@@ -12,6 +12,7 @@ namespace FantasyApp.Repository.Interfaces
         Task<Dictionary<long, int>> GetAllTotalPointsAsync();
         Task<UserGameweekScore?> GetAsync(long userId, long gameweekId);
         Task<List<UserGameweekScore>> GetByUserIdAsync(long userId);
+        Task<Dictionary<long, UserGameweekScore>> GetForGameweekAsync(long gameweekId);
         Task AddAsync(UserGameweekScore score);
         Task SaveChangesAsync();
     }

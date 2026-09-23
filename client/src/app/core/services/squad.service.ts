@@ -1,10 +1,9 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { API_ENDPOINTS } from '../constants/api-endpoints';
 import {
   PickSquadRequest,
-  SetCaptainRequest,
   Squad,
   UpdateLineupRequest,
 } from '../models/squad.models';
@@ -14,12 +13,6 @@ export class SquadService {
   private readonly squadSignal = signal<Squad | null>(null);
 
   readonly squad = this.squadSignal.asReadonly();
-  readonly startingXI = computed(() => this.squadSignal()?.players.filter((p) => p.isStarting) ?? []);
-  readonly bench = computed(() =>
-    (this.squadSignal()?.players.filter((p) => !p.isStarting) ?? []).sort(
-      (a, b) => (a.benchOrder ?? 0) - (b.benchOrder ?? 0),
-    ),
-  );
 
   constructor(private readonly http: HttpClient) {}
 
@@ -42,12 +35,6 @@ export class SquadService {
   updateLineup(request: UpdateLineupRequest): Observable<Squad> {
     return this.http
       .put<Squad>(API_ENDPOINTS.squad.lineup, request)
-      .pipe(tap((squad) => this.squadSignal.set(squad)));
-  }
-
-  setCaptain(request: SetCaptainRequest): Observable<Squad> {
-    return this.http
-      .put<Squad>(API_ENDPOINTS.squad.captain, request)
       .pipe(tap((squad) => this.squadSignal.set(squad)));
   }
 

@@ -20,30 +20,6 @@ export interface PlayerListResult {
   pageSize: number;
 }
 
-export interface UpcomingFixture {
-  opponentShortName: string;
-  isHome: boolean;
-  difficulty: number;
-  kickoffTime: string | null;
-}
-
-export interface PlayerDetail {
-  id: number;
-  firstName: string;
-  secondName: string;
-  webName: string;
-  position: PlayerPosition;
-  teamId: number;
-  teamName: string;
-  teamShortName: string;
-  priceMillions: number;
-  totalPoints: number;
-  form: number;
-  averagePoints: number;
-  status: string;
-  nextFixtures: UpcomingFixture[];
-}
-
 export interface PlayerFilters {
   position?: PlayerPosition;
   maxPrice?: number;

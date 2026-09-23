@@ -1,5 +1,6 @@
 .page {
-  max-width: 900px;
+  max-width: 720px;
+  margin-inline: auto;
 }
 
 .page-header {
@@ -13,7 +14,6 @@
     font-size: 1.4rem;
   }
 }
-
 
 .hint {
   color: var(--fa-text-light-muted);
@@ -37,7 +37,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  max-width: 320px;
+  min-width: 240px;
 
   h2 {
     color: var(--fa-text-light);
@@ -67,7 +67,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-width: 560px;
 }
 
 .league-row {

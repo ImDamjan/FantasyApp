@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_ENDPOINTS } from '../constants/api-endpoints';
-import { PlayerDetail, PlayerFilters, PlayerListResult } from '../models/player.models';
+import { PlayerFilters, PlayerListResult } from '../models/player.models';
 
 @Injectable({ providedIn: 'root' })
 export class PlayerService {
@@ -18,9 +18,5 @@ export class PlayerService {
     params = params.set('pageSize', filters.pageSize ?? 50);
 
     return this.http.get<PlayerListResult>(API_ENDPOINTS.players.list, { params });
-  }
-
-  getPlayerDetail(id: number): Observable<PlayerDetail> {
-    return this.http.get<PlayerDetail>(API_ENDPOINTS.players.detail(id));
   }
 }

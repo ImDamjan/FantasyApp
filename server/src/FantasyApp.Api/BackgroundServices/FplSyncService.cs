@@ -13,7 +13,6 @@ namespace FantasyApp.Api.BackgroundServices
     {
         private static readonly TimeSpan StaticSyncInterval = TimeSpan.FromMinutes(60);
         private static readonly TimeSpan LiveSyncInterval = TimeSpan.FromMinutes(5);
-        private static readonly TimeSpan LiveGameweekWindow = TimeSpan.FromHours(48);
 
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<FplSyncService> _logger;
@@ -30,22 +29,30 @@ namespace FantasyApp.Api.BackgroundServices
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                try
+                if (DateTime.UtcNow - _lastStaticSyncAt >= StaticSyncInterval &&
+                    await RunSafelyAsync(RunStaticSyncAsync, "static data sync"))
                 {
-                    if (DateTime.UtcNow - _lastStaticSyncAt >= StaticSyncInterval)
-                    {
-                        await RunStaticSyncAsync();
-                        _lastStaticSyncAt = DateTime.UtcNow;
-                    }
+                    _lastStaticSyncAt = DateTime.UtcNow;
+                }
 
-                    await RunLiveSyncIfGameweekActiveAsync();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "FPL sync loop failed.");
-                }
+                await RunSafelyAsync(RunSnapshotsAsync, "squad snapshot");
+                await RunSafelyAsync(RunLiveSyncAsync, "live gameweek sync");
 
                 await Task.Delay(LiveSyncInterval, stoppingToken);
+            }
+        }
+
+        private async Task<bool> RunSafelyAsync(Func<Task> step, string stepName)
+        {
+            try
+            {
+                await step();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "FPL {StepName} failed.", stepName);
+                return false;
             }
         }
 
@@ -57,31 +64,27 @@ namespace FantasyApp.Api.BackgroundServices
             _logger.LogInformation("FPL static data sync completed.");
         }
 
-        private async Task RunLiveSyncIfGameweekActiveAsync()
+        private async Task RunSnapshotsAsync()
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var snapshotService = scope.ServiceProvider.GetRequiredService<IGameweekSnapshotService>();
+            await snapshotService.EnsureSnapshotsAsync();
+        }
+
+        private async Task RunLiveSyncAsync()
         {
             using var scope = _scopeFactory.CreateScope();
             var gameweekRepository = scope.ServiceProvider.GetRequiredService<IGameweekRepository>();
-            var currentGameweek = await gameweekRepository.GetCurrentAsync();
-
-            if (currentGameweek == null)
-            {
-                return;
-            }
-
-            var now = DateTime.UtcNow;
-            var windowEnd = currentGameweek.DeadlineTime.Add(LiveGameweekWindow);
-            if (now < currentGameweek.DeadlineTime || now > windowEnd)
-            {
-                return;
-            }
-
             var syncService = scope.ServiceProvider.GetRequiredService<IFplDataSyncService>();
-            await syncService.SyncLiveGameweekAsync(currentGameweek.FplId);
-
             var scoringService = scope.ServiceProvider.GetRequiredService<IScoringService>();
-            await scoringService.RecalculateGameweekScoresAsync(currentGameweek.Id);
 
-            _logger.LogInformation("FPL live gameweek sync completed for gameweek {GameweekFplId}.", currentGameweek.FplId);
+            foreach (var gameweek in await gameweekRepository.GetStartedWithoutFinalScoresAsync())
+            {
+                await syncService.SyncLiveGameweekAsync(gameweek.FplId);
+                await scoringService.RecalculateGameweekScoresAsync(gameweek.Id);
+
+                _logger.LogInformation("FPL live sync completed for gameweek {GameweekFplId}.", gameweek.FplId);
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ namespace FantasyApp.Entity.Dtos.Leagues
     {
         [Required]
         [MinLength(3)]
+        [MaxLength(20)]
         public string Name { get; set; } = string.Empty;
     }
 

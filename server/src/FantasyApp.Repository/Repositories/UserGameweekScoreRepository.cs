@@ -28,8 +28,6 @@ namespace FantasyApp.Repository.Repositories
 
         public async Task<Dictionary<long, int>> GetPointsForGameweekByUserIdsAsync(IEnumerable<long> userIds, long gameweekId)
         {
-            // A gameweek's own points always reflect exactly what the squad scored that week —
-            // transfer-cost hits only ever reduce the season-long overall total, never this figure.
             return await _dbContext.UserGameweekScores
                 .Where(s => userIds.Contains(s.UserId) && s.GameweekId == gameweekId)
                 .ToDictionaryAsync(s => s.UserId, s => s.RawPoints);
@@ -63,6 +61,13 @@ namespace FantasyApp.Repository.Repositories
                 .Include(s => s.Gameweek)
                 .OrderBy(s => s.Gameweek!.FplId)
                 .ToListAsync();
+        }
+
+        public async Task<Dictionary<long, UserGameweekScore>> GetForGameweekAsync(long gameweekId)
+        {
+            return await _dbContext.UserGameweekScores
+                .Where(s => s.GameweekId == gameweekId)
+                .ToDictionaryAsync(s => s.UserId);
         }
 
         public async Task AddAsync(UserGameweekScore score)

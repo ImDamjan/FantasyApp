@@ -7,7 +7,6 @@
   @if (loading()) {
     <p class="hint">Loading your team...</p>
   } @else if (!squad()?.hasPickedInitialSquad) {
-    <!-- Build mode -->
     @if (buildStep() === 'select') {
       <div class="build-pitch-layout">
         <div class="build-pitch-header">
@@ -80,11 +79,10 @@
       </div>
     }
   } @else {
-    <!-- Lineup edit mode -->
     <div class="lineup-layout">
       <div class="squad-summary">
         <span>Budget left: £{{ squad()?.budgetRemainingMillions }}m</span>
-        <span>Free transfers: {{ squad()?.freeTransfersAvailable }}</span>
+        <span>Free transfers: {{ squad()?.unlimitedTransfers ? 'Unlimited' : squad()?.freeTransfersAvailable }}</span>
       </div>
 
       <div class="chips-row">

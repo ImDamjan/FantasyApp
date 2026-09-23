@@ -16,11 +16,3 @@ export interface TransferResult {
   paidTransfers: number;
   pointsCost: number;
 }
-
-export interface TransferHistoryItem {
-  gameweekName: string;
-  playerOutName: string;
-  playerInName: string;
-  wasFreeTransfer: boolean;
-  createdAt: string;
-}

@@ -22,7 +22,7 @@ namespace FantasyApp.Entity.Models
         public long? ActiveChipGameweekId { get; set; }
 
         public bool HasPickedInitialSquad { get; set; }
-        public long? LastFreeTransferGameweekId { get; set; }
+        public long? LastSnapshotGameweekId { get; set; }
 
         public ICollection<SquadPlayer> SquadPlayers { get; set; } = new List<SquadPlayer>();
     }

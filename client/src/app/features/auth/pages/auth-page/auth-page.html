@@ -1,6 +1,5 @@
 <div class="auth-page">
   <div class="auth-card" [class.auth-card--register]="mode() === 'register'">
-    <!-- Sign In -->
     <div class="form-panel form-panel--login">
       <form [formGroup]="loginForm" (ngSubmit)="onLogin()" novalidate>
         <app-logo />
@@ -32,7 +31,6 @@
       </form>
     </div>
 
-    <!-- Sign Up -->
     <div class="form-panel form-panel--register">
       <form [formGroup]="registerForm" (ngSubmit)="onRegister()" novalidate>
         <app-logo />
@@ -75,7 +73,6 @@
       </form>
     </div>
 
-    <!-- Overlay -->
     <div class="overlay-container">
       <div class="overlay">
         <div class="overlay-panel overlay-panel--left">

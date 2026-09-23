@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Premier League Fantasy App — a lookalike of the official Fantasy Premier League app. The codebase is split into `server/` (.NET 8 backend) and `client/` (Angular 22). Currently only auth (register/login/refresh/forgot-reset password) exists end-to-end; gameplay features are not built yet.
+Premier League Fantasy App — a lookalike of the official Fantasy Premier League app. The codebase is split into `server/` (.NET 8 backend) and `client/` (Angular 22). Auth, squad picking, lineup/captain/chips, transfers, points/scoring and leagues exist end-to-end; player/fixture/live data is synced from the public FPL API by a background service. See README.md for a full feature and API overview.
 
 ## Commands
 
@@ -73,6 +73,13 @@ No repository/unit-of-work abstraction over EF Core beyond `IRefreshTokenReposit
 - Password reset tokens are **not stored anywhere** — Identity encrypts a payload (user id + purpose + `SecurityStamp` + timestamp) via the Data Protection API; validity is checked by re-deriving and comparing against the user's current `SecurityStamp`, which changes whenever the password changes (invalidating old outstanding tokens).
 - `AuthController` (`server/src/FantasyApp.Api/Controllers/AuthController.cs`) exposes `POST /api/auth/{register,login,refresh-token,revoke-token,forgot-password,reset-password}` and `GET /api/auth/me` (protected, for testing JWT auth).
 
+### Gameplay design
+
+- **"Current"/"next" gameweek are time-based** (`GameweekRepository`: last/first by `DeadlineTime` relative to now), not the FPL `IsCurrent`/`IsNext` flags, which only refresh with the hourly static sync.
+- **Squad snapshots**: `SquadPlayers` is always the squad for the *next* deadline. When a deadline passes, `GameweekSnapshotService.EnsureSnapshotsAsync` copies every team's squad into `GameweekPicks` for that gameweek. It runs from `FplSyncService` and at the start of every squad/transfer mutation (so a change can never slip in after a deadline). Scoring (`ScoringService`) and the home pitch (`PointsService.GetSquadPointsAsync`) only use snapshots, so a team picked after a deadline doesn't score that gameweek.
+- **Transfers**: unlimited before a team's first snapshot (`FantasyTeam.LastSnapshotGameweekId == null`) and while a Wild Card is active. The -4 hit per extra transfer is stored in `UserGameweekScore.TransferCost` for the target gameweek but only enters `NetPoints` (and so overall totals) at that gameweek's deadline. Free transfers roll over at the deadline, capped at 5 (`ScoringRules.MaxFreeTransfers`). `TransferAllowance` holds this logic.
+- **Scoring window**: `FplSyncService` live-syncs every gameweek whose first fixture has kicked off and whose `ScoresFinalized` is false; it is finalized once FPL marks the gameweek finished.
+
 ### Frontend architecture (`client/src/app/`)
 
 Feature-based structure:
@@ -89,4 +96,3 @@ features/
 - **`authInterceptor`** attaches `Authorization: Bearer <accessToken>` to outgoing requests (skipping the auth endpoints themselves) and transparently refreshes on a 401, retrying the original request; concurrent 401s share a single in-flight refresh call.
 - **Guards**: `authGuard` blocks `/` (and anything else) unless logged in, redirecting to `/auth`; `guestGuard` blocks `/auth/*` while logged in, redirecting to `/`. Both are functional `CanActivateFn`s wired in `app.routes.ts`.
 - **Styling**: plain SCSS, no UI framework. Design tokens (FPL-inspired purple/green palette) are CSS custom properties in `src/styles.scss` (`--fa-*`). The auth pages use a hand-rolled sliding-panel login/register card (`auth-page.scss`); forgot/reset-password reuse a shared card layout from `shared/styles/_auth-card.scss`.
-- The logo is a plain text wordmark ("FANTASY" + "LEAGUE"), not a reproduction of the real Premier League/FPL crest — intentional, to avoid trademark issues.

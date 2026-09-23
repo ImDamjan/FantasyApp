@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular
 import { DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
-import { PointsSummary, SquadPlayerPoints } from '../../../../core/models/points.models';
+import { PointsSummary, SquadPoints } from '../../../../core/models/points.models';
 import { PointsService } from '../../../../core/services/points.service';
 import { GameweekDeadline } from '../../../../core/models/gameweek.models';
 import { GameweekService } from '../../../../core/services/gameweek.service';
@@ -26,28 +26,31 @@ export class HomePage implements OnInit, OnDestroy {
   readonly currentUser = this.authService.currentUser;
   readonly pointsSummary = signal<PointsSummary | null>(null);
   readonly deadlines = signal<GameweekDeadline[]>([]);
-  readonly squadPoints = signal<SquadPlayerPoints[]>([]);
+  readonly squadPoints = signal<SquadPoints | null>(null);
   readonly selectedPlayerId = signal<number | null>(null);
   private readonly now = signal(Date.now());
   private tickHandle: ReturnType<typeof setInterval> | null = null;
 
+  readonly isScoring = computed(() => this.squadPoints()?.isScoring ?? false);
+  readonly captainMultiplier = computed(() => (this.squadPoints()?.chipUsed === 'TripleCaptain' ? 3 : 2));
+
   readonly squadPitchPlayers = computed<PitchPlayer[]>(() =>
-    this.squadPoints().map((p) => ({
+    (this.squadPoints()?.players ?? []).map((p) => ({
       id: p.playerId,
       webName: p.webName,
       position: p.position,
       teamShortName: p.teamShortName,
       priceMillions: p.priceMillions,
       isStarting: p.isStarting,
-      benchOrder: p.isStarting ? null : 0,
+      benchOrder: p.benchOrder,
       isCaptain: p.isCaptain,
       isViceCaptain: p.isViceCaptain,
-      points: p.gameweekPoints,
+      points: this.isScoring() ? p.gameweekPoints : undefined,
     })),
   );
 
   readonly selectedPlayer = computed(
-    () => this.squadPoints().find((p) => p.playerId === this.selectedPlayerId()) ?? null,
+    () => this.squadPoints()?.players.find((p) => p.playerId === this.selectedPlayerId()) ?? null,
   );
 
   readonly nextDeadline = computed<GameweekDeadline | null>(() => this.deadlines()[0] ?? null);

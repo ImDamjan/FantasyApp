@@ -10,15 +10,6 @@ export interface PointsSummary {
   totalPlayers: number;
 }
 
-export interface PointsHistoryItem {
-  gameweekName: string;
-  rawPoints: number;
-  transferCost: number;
-  netPoints: number;
-  chipUsed: string | null;
-  isFinal: boolean;
-}
-
 export interface SquadPlayerFixture {
   opponentShortName: string;
   isHome: boolean;
@@ -33,6 +24,7 @@ export interface SquadPlayerPoints {
   teamShortName: string;
   priceMillions: number;
   isStarting: boolean;
+  benchOrder: number | null;
   isCaptain: boolean;
   isViceCaptain: boolean;
 
@@ -49,4 +41,11 @@ export interface SquadPlayerPoints {
 
   form: number;
   nextFixtures: SquadPlayerFixture[];
+}
+
+export interface SquadPoints {
+  gameweekName: string;
+  isScoring: boolean;
+  chipUsed: string | null;
+  players: SquadPlayerPoints[];
 }

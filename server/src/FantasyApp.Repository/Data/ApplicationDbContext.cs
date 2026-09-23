@@ -21,6 +21,7 @@ namespace FantasyApp.Repository.Data
         public DbSet<PlayerGameweekStat> PlayerGameweekStats => Set<PlayerGameweekStat>();
         public DbSet<FantasyTeam> FantasyTeams => Set<FantasyTeam>();
         public DbSet<SquadPlayer> SquadPlayers => Set<SquadPlayer>();
+        public DbSet<GameweekPick> GameweekPicks => Set<GameweekPick>();
         public DbSet<League> Leagues => Set<League>();
         public DbSet<LeagueMembership> LeagueMemberships => Set<LeagueMembership>();
         public DbSet<Transfer> Transfers => Set<Transfer>();
@@ -122,7 +123,7 @@ namespace FantasyApp.Repository.Data
 
                 entity.HasOne<Gameweek>()
                     .WithMany()
-                    .HasForeignKey(ft => ft.LastFreeTransferGameweekId)
+                    .HasForeignKey(ft => ft.LastSnapshotGameweekId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -141,9 +142,31 @@ namespace FantasyApp.Repository.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
+            builder.Entity<GameweekPick>(entity =>
+            {
+                entity.HasIndex(gp => new { gp.FantasyTeamId, gp.GameweekId, gp.PlayerId }).IsUnique();
+                entity.HasIndex(gp => gp.GameweekId);
+
+                entity.HasOne(gp => gp.FantasyTeam)
+                    .WithMany()
+                    .HasForeignKey(gp => gp.FantasyTeamId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(gp => gp.Gameweek)
+                    .WithMany()
+                    .HasForeignKey(gp => gp.GameweekId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(gp => gp.Player)
+                    .WithMany()
+                    .HasForeignKey(gp => gp.PlayerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
             builder.Entity<League>(entity =>
             {
                 entity.HasIndex(l => l.JoinCode).IsUnique();
+                entity.Property(l => l.Name).HasMaxLength(20);
 
                 entity.HasOne(l => l.OwnerUser)
                     .WithMany()

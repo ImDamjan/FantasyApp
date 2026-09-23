@@ -35,7 +35,9 @@ export class LeaguesPage implements OnInit {
   }
 
   createLeague(): void {
-    if (!this.newLeagueName.trim()) {
+    const name = this.newLeagueName.trim();
+    if (name.length < 3 || name.length > 20) {
+      this.toastService.error('League name must be between 3 and 20 characters.');
       return;
     }
 

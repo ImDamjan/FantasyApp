@@ -17,6 +17,7 @@ export interface Squad {
   name: string;
   budgetRemainingMillions: number;
   freeTransfersAvailable: number;
+  unlimitedTransfers: boolean;
   hasPickedInitialSquad: boolean;
   tripleCaptainUsed: boolean;
   benchBoostUsed: boolean;
@@ -43,9 +44,4 @@ export interface UpdateLineupRequest {
   captainPlayerId: number;
   viceCaptainPlayerId: number;
   benchOrder: BenchSlot[];
-}
-
-export interface SetCaptainRequest {
-  captainPlayerId: number;
-  viceCaptainPlayerId: number;
 }

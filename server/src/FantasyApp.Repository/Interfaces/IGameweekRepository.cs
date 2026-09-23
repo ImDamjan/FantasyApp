@@ -11,6 +11,8 @@ namespace FantasyApp.Repository.Interfaces
         Task<List<Gameweek>> GetAllAsync();
         Task<Gameweek?> GetCurrentAsync();
         Task<Gameweek?> GetNextAsync();
+        Task<List<Gameweek>> GetDeadlinePassedWithoutSnapshotAsync();
+        Task<List<Gameweek>> GetStartedWithoutFinalScoresAsync();
         Task AddAsync(Gameweek gameweek);
         Task SaveChangesAsync();
     }

@@ -1,5 +1,6 @@
 .page {
-  max-width: 700px;
+  max-width: 720px;
+  margin-inline: auto;
 
   .btn-link {
     color: var(--fa-text-light-muted);
@@ -21,7 +22,6 @@
     font-size: 1.4rem;
   }
 }
-
 
 .hint {
   color: var(--fa-text-light-muted);

@@ -1,11 +1,7 @@
 export interface TeamKit {
-  /** Shirt body color */
   primary: string;
-  /** Second color: stripe color (pattern 'stripes') or trim color (pattern 'solid') */
   secondary: string;
-  /** Sleeve color */
   sleeve: string;
-  /** Shorts color */
   shorts: string;
   pattern: 'solid' | 'stripes';
 }
@@ -18,11 +14,6 @@ const DEFAULT_KIT: TeamKit = {
   pattern: 'solid',
 };
 
-/**
- * Real-world home-kit colors for current Premier League clubs, by FPL short_name.
- * Colors only (facts, not club/sponsor artwork) — rendered as generic vector shirts,
- * the same approach the official FPL site itself uses for pitch-view icons.
- */
 export const TEAM_KITS: Record<string, TeamKit> = {
   ARS: { primary: '#ef0107', secondary: '#ffffff', sleeve: '#ffffff', shorts: '#ffffff', pattern: 'solid' },
   AVL: { primary: '#670e36', secondary: '#95bfe5', sleeve: '#95bfe5', shorts: '#ffffff', pattern: 'solid' },

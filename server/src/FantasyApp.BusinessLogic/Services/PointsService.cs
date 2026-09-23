@@ -16,19 +16,22 @@ namespace FantasyApp.BusinessLogic.Services
         private readonly IFantasyTeamRepository _fantasyTeamRepository;
         private readonly IPlayerGameweekStatRepository _playerGameweekStatRepository;
         private readonly IFixtureRepository _fixtureRepository;
+        private readonly IGameweekPickRepository _pickRepository;
 
         public PointsService(
             IUserGameweekScoreRepository scoreRepository,
             IGameweekRepository gameweekRepository,
             IFantasyTeamRepository fantasyTeamRepository,
             IPlayerGameweekStatRepository playerGameweekStatRepository,
-            IFixtureRepository fixtureRepository)
+            IFixtureRepository fixtureRepository,
+            IGameweekPickRepository pickRepository)
         {
             _scoreRepository = scoreRepository;
             _gameweekRepository = gameweekRepository;
             _fantasyTeamRepository = fantasyTeamRepository;
             _playerGameweekStatRepository = playerGameweekStatRepository;
             _fixtureRepository = fixtureRepository;
+            _pickRepository = pickRepository;
         }
 
         public async Task<PointsSummaryDto> GetSummaryAsync(long userId, string username)
@@ -89,55 +92,74 @@ namespace FantasyApp.BusinessLogic.Services
             }).ToList();
         }
 
-        public async Task<List<SquadPlayerPointsDto>> GetSquadPointsAsync(long userId)
+        public async Task<SquadPointsDto> GetSquadPointsAsync(long userId)
         {
-            var currentGameweek = await _gameweekRepository.GetCurrentAsync();
-            return await GetSquadPointsForGameweekAsync(userId, currentGameweek);
-        }
+            var result = new SquadPointsDto();
 
-        private async Task<List<SquadPlayerPointsDto>> GetSquadPointsForGameweekAsync(long userId, Gameweek? gameweek)
-        {
             var fantasyTeam = await _fantasyTeamRepository.GetByUserIdWithSquadAsync(userId);
             if (fantasyTeam == null || !fantasyTeam.HasPickedInitialSquad)
             {
-                return new List<SquadPlayerPointsDto>();
+                return result;
             }
 
-            var statsByPlayerId = gameweek != null
-                ? await _playerGameweekStatRepository.GetForGameweekAsync(gameweek.Id)
+            var gameweek = await _gameweekRepository.GetCurrentAsync();
+            var picks = gameweek != null
+                ? await _pickRepository.GetForTeamAndGameweekAsync(fantasyTeam.Id, gameweek.Id)
+                : new List<GameweekPick>();
+
+            result.GameweekName = gameweek?.Name ?? string.Empty;
+            result.IsScoring = picks.Count > 0;
+
+            if (!result.IsScoring)
+            {
+                picks = fantasyTeam.SquadPlayers.Select(sp => new GameweekPick
+                {
+                    PlayerId = sp.PlayerId,
+                    Player = sp.Player,
+                    IsStarting = sp.IsStarting,
+                    BenchOrder = sp.BenchOrder,
+                    IsCaptain = sp.IsCaptain,
+                    IsViceCaptain = sp.IsViceCaptain
+                }).ToList();
+            }
+
+            var statsByPlayerId = result.IsScoring
+                ? await _playerGameweekStatRepository.GetForGameweekAsync(gameweek!.Id)
                 : new Dictionary<long, PlayerGameweekStat>();
 
-            var effectiveCaptainPlayerId = ResolveEffectiveCaptain(fantasyTeam, statsByPlayerId);
-
-            var result = new List<SquadPlayerPointsDto>();
-            foreach (var squadPlayer in fantasyTeam.SquadPlayers)
+            ChipType? chip = null;
+            if (result.IsScoring)
             {
-                var player = squadPlayer.Player;
+                chip = (await _scoreRepository.GetAsync(userId, gameweek!.Id))?.ChipUsed;
+                result.ChipUsed = chip?.ToString();
+            }
+
+            var effectiveCaptainPlayerId = ScoringRules.ResolveEffectiveCaptain(picks, statsByPlayerId);
+
+            foreach (var pick in picks.OrderBy(p => p.IsStarting ? 0 : 1).ThenBy(p => p.BenchOrder))
+            {
+                var player = pick.Player;
                 if (player == null)
                 {
                     continue;
                 }
 
                 statsByPlayerId.TryGetValue(player.Id, out var stat);
-                var points = stat?.TotalPoints ?? 0;
-                if (player.Id == effectiveCaptainPlayerId)
-                {
-                    points *= 2;
-                }
-
+                var multiplier = ScoringRules.GetMultiplier(pick, effectiveCaptainPlayerId, chip);
                 var nextFixtures = await _fixtureRepository.GetUpcomingForTeamAsync(player.TeamId, 3);
 
-                result.Add(new SquadPlayerPointsDto
+                result.Players.Add(new SquadPlayerPointsDto
                 {
                     PlayerId = player.Id,
                     WebName = player.WebName,
                     Position = player.Position.ToString(),
                     TeamShortName = player.Team?.ShortName ?? string.Empty,
                     PriceMillions = player.PriceTenths / 10m,
-                    IsStarting = squadPlayer.IsStarting,
-                    IsCaptain = squadPlayer.IsCaptain,
-                    IsViceCaptain = squadPlayer.IsViceCaptain,
-                    GameweekPoints = points,
+                    IsStarting = pick.IsStarting,
+                    BenchOrder = pick.BenchOrder,
+                    IsCaptain = pick.IsCaptain,
+                    IsViceCaptain = pick.IsViceCaptain,
+                    GameweekPoints = (stat?.TotalPoints ?? 0) * (multiplier == 0 ? 1 : multiplier),
                     Minutes = stat?.Minutes ?? 0,
                     GoalsScored = stat?.GoalsScored ?? 0,
                     Assists = stat?.Assists ?? 0,
@@ -161,25 +183,6 @@ namespace FantasyApp.BusinessLogic.Services
             }
 
             return result;
-        }
-
-        private static long? ResolveEffectiveCaptain(
-            FantasyTeam team,
-            Dictionary<long, PlayerGameweekStat> statsByPlayerId)
-        {
-            var captain = team.SquadPlayers.FirstOrDefault(sp => sp.IsCaptain);
-            if (captain != null && statsByPlayerId.TryGetValue(captain.PlayerId, out var captainStat) && captainStat.Minutes > 0)
-            {
-                return captain.PlayerId;
-            }
-
-            var vice = team.SquadPlayers.FirstOrDefault(sp => sp.IsViceCaptain);
-            if (vice != null && statsByPlayerId.TryGetValue(vice.PlayerId, out var viceStat) && viceStat.Minutes > 0)
-            {
-                return vice.PlayerId;
-            }
-
-            return null;
         }
     }
 }

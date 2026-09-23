@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using System.Threading.Tasks;
+using FantasyApp.Api.Extensions;
 using FantasyApp.BusinessLogic.Interfaces;
 using FantasyApp.Entity.Dtos.Squad;
 using Microsoft.AspNetCore.Authorization;
@@ -22,14 +22,14 @@ namespace FantasyApp.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSquad()
         {
-            var result = await _squadService.GetSquadAsync(GetUserId());
+            var result = await _squadService.GetSquadAsync(User.GetUserId());
             return Ok(result.Data);
         }
 
         [HttpPost]
         public async Task<IActionResult> PickSquad([FromBody] PickSquadRequestDto request)
         {
-            var result = await _squadService.PickInitialSquadAsync(GetUserId(), request);
+            var result = await _squadService.PickInitialSquadAsync(User.GetUserId(), request);
             if (!result.Succeeded)
             {
                 return BadRequest(new { message = result.ErrorMessage });
@@ -41,7 +41,7 @@ namespace FantasyApp.Api.Controllers
         [HttpPut("lineup")]
         public async Task<IActionResult> UpdateLineup([FromBody] UpdateLineupRequestDto request)
         {
-            var result = await _squadService.UpdateLineupAsync(GetUserId(), request);
+            var result = await _squadService.UpdateLineupAsync(User.GetUserId(), request);
             if (!result.Succeeded)
             {
                 return BadRequest(new { message = result.ErrorMessage });
@@ -53,7 +53,7 @@ namespace FantasyApp.Api.Controllers
         [HttpPut("captain")]
         public async Task<IActionResult> SetCaptain([FromBody] SetCaptainRequestDto request)
         {
-            var result = await _squadService.SetCaptainAsync(GetUserId(), request);
+            var result = await _squadService.SetCaptainAsync(User.GetUserId(), request);
             if (!result.Succeeded)
             {
                 return BadRequest(new { message = result.ErrorMessage });
@@ -65,19 +65,13 @@ namespace FantasyApp.Api.Controllers
         [HttpPut("chip")]
         public async Task<IActionResult> ActivateChip([FromBody] ActivateChipRequestDto request)
         {
-            var result = await _squadService.ActivateChipAsync(GetUserId(), request);
+            var result = await _squadService.ActivateChipAsync(User.GetUserId(), request);
             if (!result.Succeeded)
             {
                 return BadRequest(new { message = result.ErrorMessage });
             }
 
             return Ok(result.Data);
-        }
-
-        private long GetUserId()
-        {
-            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-            return long.Parse(idClaim!);
         }
     }
 }

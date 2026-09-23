@@ -8,6 +8,6 @@ namespace FantasyApp.BusinessLogic.Interfaces
     {
         Task<PointsSummaryDto> GetSummaryAsync(long userId, string username);
         Task<List<PointsHistoryItemDto>> GetHistoryAsync(long userId);
-        Task<List<SquadPlayerPointsDto>> GetSquadPointsAsync(long userId);
+        Task<SquadPointsDto> GetSquadPointsAsync(long userId);
     }
 }

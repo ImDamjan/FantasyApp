@@ -19,9 +19,12 @@
       <button type="button" class="menu-close" (click)="close.emit()" aria-label="Close">&times;</button>
     </div>
 
+    @if (!showPoints) {
+      <p class="hint">This player was not in your team at this gameweek's deadline.</p>
+    } @else {
     <div class="points-summary">
       <span class="points-value">{{ player.gameweekPoints }}</span>
-      <span class="points-label">points this gameweek{{ player.isCaptain ? ' (captain, x2)' : '' }}</span>
+      <span class="points-label">points this gameweek{{ player.isCaptain ? ' (captain, x' + captainMultiplier + ')' : '' }}</span>
     </div>
 
     @if (breakdown.length > 0) {
@@ -35,6 +38,7 @@
       </div>
     } @else {
       <p class="hint">No points breakdown yet for this gameweek.</p>
+    }
     }
 
     <div class="stats-section">

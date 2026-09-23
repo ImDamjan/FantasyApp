@@ -13,5 +13,8 @@ namespace FantasyApp.Entity.Models
         public bool IsCurrent { get; set; }
         public bool IsNext { get; set; }
         public bool IsFinished { get; set; }
+
+        public bool SquadsSnapshotted { get; set; }
+        public bool ScoresFinalized { get; set; }
     }
 }

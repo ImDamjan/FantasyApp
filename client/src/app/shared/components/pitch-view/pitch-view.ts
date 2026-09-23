@@ -14,7 +14,6 @@ export interface PitchPlayer {
   isCaptain: boolean;
   isViceCaptain: boolean;
   points?: number;
-  /** Shown as an empty "pick a replacement" slot instead of a shirt (transfers screen: outgoing player). */
   isVacant?: boolean;
 }
 
@@ -27,15 +26,11 @@ export interface PitchPlayer {
 })
 export class PitchView {
   @Input() players: PitchPlayer[] = [];
-  /** Non-null while waiting for a second click to complete a substitution. */
   @Input() selectedId: number | null = null;
-  /** Ids of players that are valid substitution targets for the current `selectedId` candidate. */
   @Input() swapTargetIds: number[] = [];
   @Input() allowRemove = false;
-  /** When false, clicks always emit playerClick directly instead of opening the action popup (e.g. the transfers screen, where a click means "transfer this player out"). */
   @Input() useActionMenu = true;
 
-  /** Emitted to perform a substitution: first click sets selectedId (via substitute action), second click on another player completes the swap. */
   @Output() playerClick = new EventEmitter<number>();
   @Output() captainChange = new EventEmitter<number>();
   @Output() viceCaptainChange = new EventEmitter<number>();
@@ -75,7 +70,6 @@ export class PitchView {
 
   onClick(id: number): void {
     if (!this.useActionMenu || this.selectedId !== null) {
-      // Already mid-substitution: this click picks the swap target directly.
       this.playerClick.emit(id);
       return;
     }

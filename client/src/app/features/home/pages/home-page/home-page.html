@@ -77,7 +77,14 @@
       @if (squadPitchPlayers().length > 0) {
         <div class="panel team-pitch-panel">
           <h2>Your Team This Gameweek</h2>
-          <p class="subtitle">Tap a player to see their points breakdown, form and next fixtures.</p>
+          @if (isScoring()) {
+            <p class="subtitle">Tap a player to see their points breakdown, form and next fixtures.</p>
+          } @else {
+            <p class="subtitle">
+              Your team was picked after this gameweek's deadline, so it starts scoring from
+              {{ nextDeadline()?.name || 'the next gameweek' }}.
+            </p>
+          }
           <app-pitch-view [players]="squadPitchPlayers()" [useActionMenu]="false" (playerClick)="onSquadPlayerClick($event)" />
         </div>
       }
@@ -93,7 +100,7 @@
             <div class="countdown">
               <div class="countdown-unit">
                 <span class="countdown-value">{{ pad(c.days) }}</span>
-                <span class="countdown-label">Day</span>
+                <span class="countdown-label">Days</span>
               </div>
               <span class="countdown-colon">:</span>
               <div class="countdown-unit">
@@ -140,6 +147,10 @@
   </div>
 
   @if (selectedPlayer(); as player) {
-    <app-player-stats-popup [player]="player" (close)="selectedPlayerId.set(null)" />
+    <app-player-stats-popup
+      [player]="player"
+      [showPoints]="isScoring()"
+      [captainMultiplier]="captainMultiplier()"
+      (close)="selectedPlayerId.set(null)" />
   }
 </app-shell>

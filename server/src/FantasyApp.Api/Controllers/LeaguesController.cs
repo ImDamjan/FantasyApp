@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using System.Threading.Tasks;
+using FantasyApp.Api.Extensions;
 using FantasyApp.BusinessLogic.Interfaces;
 using FantasyApp.Entity.Dtos.Leagues;
 using Microsoft.AspNetCore.Authorization;
@@ -22,7 +22,7 @@ namespace FantasyApp.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateLeague([FromBody] CreateLeagueRequestDto request)
         {
-            var result = await _leagueService.CreateLeagueAsync(GetUserId(), request);
+            var result = await _leagueService.CreateLeagueAsync(User.GetUserId(), request);
             if (!result.Succeeded)
             {
                 return BadRequest(new { message = result.ErrorMessage });
@@ -34,7 +34,7 @@ namespace FantasyApp.Api.Controllers
         [HttpPost("join")]
         public async Task<IActionResult> JoinLeague([FromBody] JoinLeagueRequestDto request)
         {
-            var result = await _leagueService.JoinLeagueAsync(GetUserId(), request);
+            var result = await _leagueService.JoinLeagueAsync(User.GetUserId(), request);
             if (!result.Succeeded)
             {
                 return BadRequest(new { message = result.ErrorMessage });
@@ -46,26 +46,20 @@ namespace FantasyApp.Api.Controllers
         [HttpGet("mine")]
         public async Task<IActionResult> GetMyLeagues()
         {
-            var leagues = await _leagueService.GetMyLeaguesAsync(GetUserId());
+            var leagues = await _leagueService.GetMyLeaguesAsync(User.GetUserId());
             return Ok(leagues);
         }
 
         [HttpGet("{id}/standings")]
         public async Task<IActionResult> GetStandings(long id)
         {
-            var result = await _leagueService.GetStandingsAsync(GetUserId(), id);
+            var result = await _leagueService.GetStandingsAsync(User.GetUserId(), id);
             if (!result.Succeeded)
             {
                 return BadRequest(new { message = result.ErrorMessage });
             }
 
             return Ok(result.Data);
-        }
-
-        private long GetUserId()
-        {
-            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-            return long.Parse(idClaim!);
         }
     }
 }

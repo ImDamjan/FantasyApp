@@ -19,18 +19,15 @@ export const API_ENDPOINTS = {
   },
   players: {
     list: PLAYERS_BASE,
-    detail: (id: number) => `${PLAYERS_BASE}/${id}`,
   },
   squad: {
     get: SQUAD_BASE,
     pick: SQUAD_BASE,
     lineup: `${SQUAD_BASE}/lineup`,
-    captain: `${SQUAD_BASE}/captain`,
     chip: `${SQUAD_BASE}/chip`,
   },
   transfers: {
     submit: TRANSFERS_BASE,
-    history: `${TRANSFERS_BASE}/history`,
   },
   leagues: {
     create: LEAGUES_BASE,
@@ -40,7 +37,6 @@ export const API_ENDPOINTS = {
   },
   points: {
     summary: `${POINTS_BASE}/summary`,
-    history: `${POINTS_BASE}/history`,
     squad: `${POINTS_BASE}/squad`,
   },
   gameweeks: {

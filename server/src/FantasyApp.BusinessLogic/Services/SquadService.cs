@@ -22,21 +22,30 @@ namespace FantasyApp.BusinessLogic.Services
         private readonly IFantasyTeamRepository _fantasyTeamRepository;
         private readonly IPlayerRepository _playerRepository;
         private readonly IGameweekRepository _gameweekRepository;
+        private readonly ITransferRepository _transferRepository;
+        private readonly IUserGameweekScoreRepository _scoreRepository;
+        private readonly IGameweekSnapshotService _snapshotService;
 
         public SquadService(
             IFantasyTeamRepository fantasyTeamRepository,
             IPlayerRepository playerRepository,
-            IGameweekRepository gameweekRepository)
+            IGameweekRepository gameweekRepository,
+            ITransferRepository transferRepository,
+            IUserGameweekScoreRepository scoreRepository,
+            IGameweekSnapshotService snapshotService)
         {
             _fantasyTeamRepository = fantasyTeamRepository;
             _playerRepository = playerRepository;
             _gameweekRepository = gameweekRepository;
+            _transferRepository = transferRepository;
+            _scoreRepository = scoreRepository;
+            _snapshotService = snapshotService;
         }
 
         public async Task<ServiceResult<SquadDto>> GetSquadAsync(long userId)
         {
             var fantasyTeam = await GetOrCreateFantasyTeamAsync(userId);
-            return ServiceResult<SquadDto>.Success(ToSquadDto(fantasyTeam));
+            return ServiceResult<SquadDto>.Success(await BuildSquadDtoAsync(fantasyTeam));
         }
 
         public async Task<ServiceResult<SquadDto>> PickInitialSquadAsync(long userId, PickSquadRequestDto request)
@@ -99,7 +108,7 @@ namespace FantasyApp.BusinessLogic.Services
 
             await _fantasyTeamRepository.SaveChangesAsync();
 
-            return ServiceResult<SquadDto>.Success(ToSquadDto(fantasyTeam));
+            return ServiceResult<SquadDto>.Success(await BuildSquadDtoAsync(fantasyTeam));
         }
 
         public async Task<ServiceResult<SquadDto>> UpdateLineupAsync(long userId, UpdateLineupRequestDto request)
@@ -132,7 +141,7 @@ namespace FantasyApp.BusinessLogic.Services
 
             await _fantasyTeamRepository.SaveChangesAsync();
 
-            return ServiceResult<SquadDto>.Success(ToSquadDto(fantasyTeam));
+            return ServiceResult<SquadDto>.Success(await BuildSquadDtoAsync(fantasyTeam));
         }
 
         public async Task<ServiceResult<SquadDto>> SetCaptainAsync(long userId, SetCaptainRequestDto request)
@@ -162,7 +171,7 @@ namespace FantasyApp.BusinessLogic.Services
 
             await _fantasyTeamRepository.SaveChangesAsync();
 
-            return ServiceResult<SquadDto>.Success(ToSquadDto(fantasyTeam));
+            return ServiceResult<SquadDto>.Success(await BuildSquadDtoAsync(fantasyTeam));
         }
 
         public async Task<ServiceResult<SquadDto>> ActivateChipAsync(long userId, ActivateChipRequestDto request)
@@ -195,10 +204,15 @@ namespace FantasyApp.BusinessLogic.Services
                 return ServiceResult<SquadDto>.Failure("You already have an active chip for the upcoming gameweek.");
             }
 
-            var targetGameweek = await _gameweekRepository.GetNextAsync() ?? await _gameweekRepository.GetCurrentAsync();
+            var targetGameweek = await _gameweekRepository.GetNextAsync();
             if (targetGameweek == null)
             {
-                return ServiceResult<SquadDto>.Failure("Season data is not available yet.");
+                return ServiceResult<SquadDto>.Failure("There are no more gameweeks this season.");
+            }
+
+            if (chip == ChipType.WildCard && TransferAllowance.HasUnlimitedTransfers(fantasyTeam, targetGameweek.Id))
+            {
+                return ServiceResult<SquadDto>.Failure("You already have unlimited transfers until your first deadline.");
             }
 
             fantasyTeam.ActiveChip = chip;
@@ -213,16 +227,24 @@ namespace FantasyApp.BusinessLogic.Services
                     break;
                 case ChipType.WildCard:
                     fantasyTeam.WildCardUsed = true;
+                    var score = await _scoreRepository.GetAsync(fantasyTeam.UserId, targetGameweek.Id);
+                    if (score != null)
+                    {
+                        score.TransferCost = 0;
+                        score.NetPoints = score.RawPoints;
+                    }
                     break;
             }
 
             await _fantasyTeamRepository.SaveChangesAsync();
 
-            return ServiceResult<SquadDto>.Success(ToSquadDto(fantasyTeam));
+            return ServiceResult<SquadDto>.Success(await BuildSquadDtoAsync(fantasyTeam));
         }
 
         private async Task<FantasyTeam> GetOrCreateFantasyTeamAsync(long userId)
         {
+            await _snapshotService.EnsureSnapshotsAsync();
+
             var fantasyTeam = await _fantasyTeamRepository.GetByUserIdWithSquadAsync(userId);
             if (fantasyTeam != null)
             {
@@ -336,11 +358,56 @@ namespace FantasyApp.BusinessLogic.Services
             return null;
         }
 
-        internal static SquadDto ToSquadDto(FantasyTeam fantasyTeam) => new()
+        private async Task<SquadDto> BuildSquadDtoAsync(FantasyTeam fantasyTeam)
+        {
+            var nextGameweek = await _gameweekRepository.GetNextAsync();
+            if (nextGameweek == null)
+            {
+                return ToSquadDto(fantasyTeam, new TransferAllowance(false, 0, 0, 0));
+            }
+
+            var windowTransfers = await _transferRepository.GetByFantasyTeamAndGameweekDescAsync(fantasyTeam.Id, nextGameweek.Id);
+            return ToSquadDto(fantasyTeam, TransferAllowance.Calculate(fantasyTeam, nextGameweek.Id, windowTransfers));
+        }
+
+        internal static void ReassignMissingArmbands(ICollection<SquadPlayer> squadPlayers)
+        {
+            var captain = squadPlayers.FirstOrDefault(sp => sp.IsCaptain);
+            var viceCaptain = squadPlayers.FirstOrDefault(sp => sp.IsViceCaptain);
+
+            if (captain == null && viceCaptain != null)
+            {
+                viceCaptain.IsViceCaptain = false;
+                viceCaptain.IsCaptain = true;
+                captain = viceCaptain;
+                viceCaptain = null;
+            }
+
+            var candidates = squadPlayers
+                .Where(sp => sp.IsStarting && sp != captain)
+                .OrderByDescending(sp => sp.Player?.PriceTenths ?? 0)
+                .ToList();
+
+            if (captain == null && candidates.Count > 0)
+            {
+                candidates[0].IsCaptain = true;
+                candidates.RemoveAt(0);
+            }
+
+            if (viceCaptain == null && candidates.Count > 0)
+            {
+                candidates[0].IsViceCaptain = true;
+            }
+        }
+
+        internal static SquadDto ToSquadDto(FantasyTeam fantasyTeam, TransferAllowance allowance) => new()
         {
             Name = fantasyTeam.Name,
             BudgetRemainingMillions = fantasyTeam.BudgetRemainingTenths / 10m,
-            FreeTransfersAvailable = fantasyTeam.FreeTransfersAvailable,
+            FreeTransfersAvailable = allowance.Unlimited
+                ? fantasyTeam.FreeTransfersAvailable
+                : fantasyTeam.FreeTransfersAvailable - allowance.FreeTransfersUsed,
+            UnlimitedTransfers = allowance.Unlimited,
             HasPickedInitialSquad = fantasyTeam.HasPickedInitialSquad,
             TripleCaptainUsed = fantasyTeam.TripleCaptainUsed,
             BenchBoostUsed = fantasyTeam.BenchBoostUsed,

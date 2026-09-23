@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using System.Threading.Tasks;
+using FantasyApp.Api.Extensions;
 using FantasyApp.BusinessLogic.Interfaces;
 using FantasyApp.Entity.Dtos.Transfers;
 using Microsoft.AspNetCore.Authorization;
@@ -22,7 +22,7 @@ namespace FantasyApp.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> SubmitTransfers([FromBody] SubmitTransfersRequestDto request)
         {
-            var result = await _transferService.SubmitTransfersAsync(GetUserId(), request);
+            var result = await _transferService.SubmitTransfersAsync(User.GetUserId(), request);
             if (!result.Succeeded)
             {
                 return BadRequest(new { message = result.ErrorMessage });
@@ -34,14 +34,8 @@ namespace FantasyApp.Api.Controllers
         [HttpGet("history")]
         public async Task<IActionResult> GetHistory()
         {
-            var result = await _transferService.GetHistoryAsync(GetUserId());
+            var result = await _transferService.GetHistoryAsync(User.GetUserId());
             return Ok(result.Data);
-        }
-
-        private long GetUserId()
-        {
-            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-            return long.Parse(idClaim!);
         }
     }
 }

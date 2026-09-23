@@ -37,13 +37,10 @@ export class TransfersPage implements OnInit {
   readonly loading = signal(true);
   readonly saving = signal(false);
 
-  /** Players marked "out" on the pitch that don't have a replacement picked yet — several can be marked at once. */
   readonly outIds = signal<number[]>([]);
-  /** Which of `outIds` the replacement search list is currently targeting. */
   readonly activeOutId = signal<number | null>(null);
   readonly pendingTransfers = signal<PendingTransfer[]>([]);
 
-  /** Owned squad players not already pending a transfer-out — these get a red × in the search list instead of a disabled ✓. */
   readonly removableIds = computed(() => {
     const squad = this.squad();
     if (!squad) {
@@ -96,7 +93,7 @@ export class TransfersPage implements OnInit {
 
   readonly pointsCostPreview = computed(() => {
     const squad = this.squad();
-    if (!squad) {
+    if (!squad || squad.unlimitedTransfers) {
       return 0;
     }
     const extra = Math.max(0, this.pendingTransfers().length - squad.freeTransfersAvailable);
@@ -120,18 +117,15 @@ export class TransfersPage implements OnInit {
     const currentOutIds = this.outIds();
     if (currentOutIds.includes(id)) {
       if (this.activeOutId() === id) {
-        // Clicking the already-active vacant slot again restores that player to the squad.
         const updated = currentOutIds.filter((x) => x !== id);
         this.outIds.set(updated);
         this.activeOutId.set(updated[updated.length - 1] ?? null);
       } else {
-        // Clicking a different vacant slot just refocuses the replacement search on it.
         this.activeOutId.set(id);
       }
       return;
     }
 
-    // Not marked yet: mark this player out (on top of any others already marked) and focus it.
     this.outIds.set([...currentOutIds, id]);
     this.activeOutId.set(id);
   }
@@ -201,7 +195,7 @@ export class TransfersPage implements OnInit {
           this.activeOutId.set(null);
           this.toastService.success(
             result.pointsCost > 0
-              ? `${result.transfersMade} transfer${result.transfersMade === 1 ? '' : 's'} made — ${result.paidTransfers} paid, ${result.pointsCost} points deducted from your overall total.`
+              ? `${result.transfersMade} transfer${result.transfersMade === 1 ? '' : 's'} made — ${result.paidTransfers} paid this gameweek, -${result.pointsCost} points will be deducted at the deadline.`
               : `${result.transfersMade} transfer${result.transfersMade === 1 ? '' : 's'} made — all free, no points cost.`,
           );
         },

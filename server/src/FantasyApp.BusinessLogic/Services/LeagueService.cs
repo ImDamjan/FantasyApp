@@ -162,8 +162,6 @@ namespace FantasyApp.BusinessLogic.Services
                 entries[i].Rank = i + 1;
             }
 
-            // Previous rank = rank ordering by points totalled up to (excluding) the current gameweek.
-            // Only meaningful once at least one gameweek has been played before the current one.
             var hasPreviousGameweek = currentGameweek != null
                 && await _gameweekRepository.GetAllAsync() is { } allGameweeks
                 && allGameweeks.Any(g => g.DeadlineTime < currentGameweek.DeadlineTime);
@@ -186,10 +184,6 @@ namespace FantasyApp.BusinessLogic.Services
             });
         }
 
-        /// <summary>
-        /// Backfills membership in the seeded "Overall League" for accounts created before
-        /// auto-join-on-register existed, so it always shows up in "My Leagues".
-        /// </summary>
         private async Task EnsureOfficialLeagueMembershipAsync(long userId)
         {
             var officialLeague = await _leagueRepository.GetOfficialLeagueAsync();

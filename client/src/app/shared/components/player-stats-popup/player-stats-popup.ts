@@ -11,6 +11,8 @@ import { ShirtIcon } from '../shirt-icon/shirt-icon';
 })
 export class PlayerStatsPopup {
   @Input({ required: true }) player!: SquadPlayerPoints;
+  @Input() showPoints = true;
+  @Input() captainMultiplier = 2;
   @Output() close = new EventEmitter<void>();
 
   get breakdown(): { label: string; value: number }[] {

@@ -7,6 +7,7 @@ namespace FantasyApp.Entity.Dtos.Squad
         public string Name { get; set; } = string.Empty;
         public decimal BudgetRemainingMillions { get; set; }
         public int FreeTransfersAvailable { get; set; }
+        public bool UnlimitedTransfers { get; set; }
         public bool HasPickedInitialSquad { get; set; }
         public bool TripleCaptainUsed { get; set; }
         public bool BenchBoostUsed { get; set; }

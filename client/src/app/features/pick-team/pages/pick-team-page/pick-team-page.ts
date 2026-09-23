@@ -37,7 +37,6 @@ const POSITION_LIMITS: Record<PlayerPosition, number> = {
   Forward: 3,
 };
 
-/** Starting-XI formation limits (min/max players of each position allowed on the pitch). */
 const STARTING_LIMITS: Record<PlayerPosition, { min: number; max: number }> = {
   Goalkeeper: { min: 1, max: 1 },
   Defender: { min: 3, max: 5 },
@@ -69,13 +68,11 @@ export class PickTeamPage implements OnInit {
     return chip ? CHIP_LABELS[chip] : '';
   });
 
-  // "build a squad from scratch" mode (no squad picked yet)
   readonly buildPlayers = signal<BuildPlayer[]>([]);
   readonly buildStep = signal<'select' | 'lineup'>('select');
   readonly buildCaptainId = signal<number | null>(null);
   readonly buildViceCaptainId = signal<number | null>(null);
   readonly buildSwapCandidateId = signal<number | null>(null);
-  /** Non-null while the "add player to this empty slot" search overlay is open. */
   readonly slotSearchPosition = signal<PlayerPosition | null>(null);
 
   readonly buildExcludeIds = computed(() => this.buildPlayers().map((p) => p.id));
@@ -111,7 +108,6 @@ export class PickTeamPage implements OnInit {
     this.findSwapTargetIds(this.buildPlayers(), this.buildSwapCandidateId()),
   );
 
-  // "edit an existing squad's lineup" mode
   readonly lineupPlayers = signal<BuildPlayer[]>([]);
   readonly lineupCaptainId = signal<number | null>(null);
   readonly lineupViceCaptainId = signal<number | null>(null);
@@ -123,9 +119,7 @@ export class PickTeamPage implements OnInit {
     this.findSwapTargetIds(this.lineupPlayers(), this.lineupSwapCandidateId()),
   );
 
-  /** Snapshot of the last-saved lineup state, used to show the Save button only when something changed. */
   private lineupSnapshot = '';
-  /** Deep copy of the last-saved lineup, restored verbatim by "Discard changes". */
   private lineupSavedPlayers: BuildPlayer[] = [];
   private lineupSavedCaptainId: number | null = null;
   private lineupSavedViceCaptainId: number | null = null;
@@ -168,7 +162,6 @@ export class PickTeamPage implements OnInit {
     this.captureLineupSavedState();
   }
 
-  /** Records the current lineup signals as the "last-saved" state that Discard changes reverts to. */
   private captureLineupSavedState(): void {
     this.lineupSnapshot = this.snapshotLineup(this.lineupPlayers(), this.lineupCaptainId(), this.lineupViceCaptainId());
     this.lineupSavedPlayers = this.lineupPlayers().map((p) => ({ ...p }));
@@ -190,8 +183,6 @@ export class PickTeamPage implements OnInit {
       .sort((a, b) => a - b);
     return JSON.stringify({ starting, captainId, viceCaptainId });
   }
-
-  // ---- Build mode: pick 15 players from scratch ----
 
   onAddBuildPlayer(player: PlayerListItem): void {
     const current = this.buildPlayers();
@@ -246,7 +237,6 @@ export class PickTeamPage implements OnInit {
     }
   }
 
-  /** Randomly fills all 15 squad slots, spends nearly the full £100m budget, picks a starting XI and a random captain/vice-captain. */
   autoPick(): void {
     this.autoPicking.set(true);
 
@@ -295,11 +285,6 @@ export class PickTeamPage implements OnInit {
     });
   }
 
-  /**
-   * Randomly assembles a valid 15-player squad (2/5/5/3, max 3 per club, within £100m), then
-   * greedily upgrades random slots to pricier alternatives until the budget is nearly exhausted.
-   * Retries a few times in case an unlucky shuffle can't satisfy the club-limit constraint.
-   */
   private buildAutoSquad(pools: Record<PlayerPosition, PlayerListItem[]>): BuildPlayer[] | null {
     const budget = 100;
     const clubLimit = 3;
@@ -313,7 +298,6 @@ export class PickTeamPage implements OnInit {
       for (const position of positions) {
         const need = POSITION_LIMITS[position];
         const sortedByPrice = [...pools[position]].sort((a, b) => a.priceMillions - b.priceMillions);
-        // Bias toward the cheaper 70% of the pool so there's budget room left for the upgrade pass.
         const cheapPoolSize = Math.max(need, Math.floor(sortedByPrice.length * 0.7));
         const candidates = this.shuffle(sortedByPrice.slice(0, cheapPoolSize));
 
@@ -354,7 +338,6 @@ export class PickTeamPage implements OnInit {
     return null;
   }
 
-  /** Mutates `selected` in place, swapping in pricier alternatives until `remaining` budget is nearly spent. */
   private upgradeTowardsBudget(
     selected: PlayerListItem[],
     pools: Record<PlayerPosition, PlayerListItem[]>,
@@ -484,8 +467,6 @@ export class PickTeamPage implements OnInit {
       });
   }
 
-  // ---- Lineup mode: edit an already-picked squad ----
-
   onLineupPlayerClick(id: number): void {
     const players = [...this.lineupPlayers()];
     const { candidateId, swapped } = this.trySwap(players, this.lineupSwapCandidateId(), id);
@@ -566,8 +547,6 @@ export class PickTeamPage implements OnInit {
     this.authService.logout().subscribe(() => this.router.navigate(['/auth']));
   }
 
-  // ---- Shared helpers ----
-
   private toPitchPlayers(
     players: BuildPlayer[],
     captainId: number | null,
@@ -586,10 +565,6 @@ export class PickTeamPage implements OnInit {
     }));
   }
 
-  /**
-   * Mutates `players` in place (swapping starting/bench) and returns the new swap-candidate id,
-   * plus the [candidateId, clickedId] pair if a swap actually happened (for armband transfer).
-   */
   private trySwap(
     players: BuildPlayer[],
     candidateId: number | null,
@@ -612,7 +587,6 @@ export class PickTeamPage implements OnInit {
 
     const formationError = this.findFormationError(players);
     if (formationError) {
-      // Revert: the swap would break the required formation.
       [a.isStarting, b.isStarting] = [b.isStarting, a.isStarting];
       this.toastService.error(formationError);
       return { candidateId: null, swapped: null };
@@ -622,7 +596,6 @@ export class PickTeamPage implements OnInit {
     return { candidateId: null, swapped: [a.id, b.id] };
   }
 
-  /** Whoever just got benched hands their captain/vice-captain armband to whoever just took their starting spot. */
   private transferArmbands(
     players: BuildPlayer[],
     [aId, bId]: [number, number],
@@ -646,15 +619,12 @@ export class PickTeamPage implements OnInit {
       newViceCaptainId = starting.id;
     }
     if (newCaptainId !== null && newCaptainId === newViceCaptainId) {
-      // Both armbands landed on the same incoming player (the benched pair held captain AND vice
-      // between them) — a player can't hold both, so the vice-captain slot is cleared.
       newViceCaptainId = null;
     }
     captainId.set(newCaptainId);
     viceCaptainId.set(newViceCaptainId);
   }
 
-  /** A player can't be both captain and vice-captain — promoting the vice-captain rotates the old captain into the vice slot. */
   private setCaptain(
     captainId: WritableSignal<number | null>,
     viceCaptainId: WritableSignal<number | null>,
@@ -683,7 +653,6 @@ export class PickTeamPage implements OnInit {
     players.filter((p) => p.isStarting).forEach((p) => (p.benchOrder = null));
   }
 
-  /** Returns an error message if the starting XI among `players` violates formation limits, otherwise null. */
   private findFormationError(players: BuildPlayer[]): string | null {
     const starters = players.filter((p) => p.isStarting);
     for (const position of Object.keys(STARTING_LIMITS) as PlayerPosition[]) {
@@ -699,12 +668,6 @@ export class PickTeamPage implements OnInit {
     return null;
   }
 
-  /**
-   * Given a swap `candidateId` (or null), returns the ids of every other player that could
-   * legally be swapped with it — i.e. is on the opposite side of the starting/bench line and,
-   * after the swap, still leaves a valid starting XI (any position can replace any other, as
-   * long as the per-position min/max in `STARTING_LIMITS` still holds).
-   */
   private findSwapTargetIds(players: BuildPlayer[], candidateId: number | null): number[] {
     if (candidateId === null) {
       return [];

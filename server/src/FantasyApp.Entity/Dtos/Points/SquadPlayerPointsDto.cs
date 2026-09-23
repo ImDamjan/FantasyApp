@@ -11,6 +11,7 @@ namespace FantasyApp.Entity.Dtos.Points
         public string TeamShortName { get; set; } = string.Empty;
         public decimal PriceMillions { get; set; }
         public bool IsStarting { get; set; }
+        public int? BenchOrder { get; set; }
         public bool IsCaptain { get; set; }
         public bool IsViceCaptain { get; set; }
 

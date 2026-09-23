@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -34,12 +35,39 @@ namespace FantasyApp.Repository.Repositories
 
         public async Task<Gameweek?> GetCurrentAsync()
         {
-            return await _dbContext.Gameweeks.SingleOrDefaultAsync(g => g.IsCurrent);
+            var now = DateTime.UtcNow;
+            return await _dbContext.Gameweeks
+                .Where(g => g.DeadlineTime <= now)
+                .OrderByDescending(g => g.DeadlineTime)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<Gameweek?> GetNextAsync()
         {
-            return await _dbContext.Gameweeks.SingleOrDefaultAsync(g => g.IsNext);
+            var now = DateTime.UtcNow;
+            return await _dbContext.Gameweeks
+                .Where(g => g.DeadlineTime > now)
+                .OrderBy(g => g.DeadlineTime)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<List<Gameweek>> GetDeadlinePassedWithoutSnapshotAsync()
+        {
+            var now = DateTime.UtcNow;
+            return await _dbContext.Gameweeks
+                .Where(g => g.DeadlineTime <= now && !g.SquadsSnapshotted)
+                .OrderBy(g => g.DeadlineTime)
+                .ToListAsync();
+        }
+
+        public async Task<List<Gameweek>> GetStartedWithoutFinalScoresAsync()
+        {
+            var now = DateTime.UtcNow;
+            return await _dbContext.Gameweeks
+                .Where(g => !g.ScoresFinalized &&
+                            _dbContext.Fixtures.Any(f => f.GameweekId == g.Id && f.KickoffTime <= now))
+                .OrderBy(g => g.DeadlineTime)
+                .ToListAsync();
         }
 
         public async Task AddAsync(Gameweek gameweek)
