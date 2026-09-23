@@ -21,6 +21,7 @@ namespace FantasyApp.Repository.Repositories
         {
             return await _dbContext.GameweekPicks
                 .Include(gp => gp.FantasyTeam)
+                .Include(gp => gp.Player)
                 .Where(gp => gp.GameweekId == gameweekId)
                 .ToListAsync();
         }

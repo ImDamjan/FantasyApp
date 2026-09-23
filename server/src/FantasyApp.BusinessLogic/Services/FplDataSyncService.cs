@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using FantasyApp.BusinessLogic.Interfaces;
+using FantasyApp.Common.Dtos.Fpl;
 using FantasyApp.Common.Interfaces;
 using FantasyApp.Entity.Models;
 using FantasyApp.Repository.Interfaces;
@@ -101,42 +103,7 @@ namespace FantasyApp.BusinessLogic.Services
 
             await _playerRepository.SaveChangesAsync();
 
-            var fixtures = await _fplApiClient.GetFixturesAsync();
-
-            foreach (var fplFixture in fixtures)
-            {
-                var homeTeam = await _teamRepository.GetByFplIdAsync(fplFixture.TeamH);
-                var awayTeam = await _teamRepository.GetByFplIdAsync(fplFixture.TeamA);
-                if (homeTeam == null || awayTeam == null)
-                {
-                    continue;
-                }
-
-                Gameweek? gameweek = null;
-                if (fplFixture.Event.HasValue)
-                {
-                    gameweek = await _gameweekRepository.GetByFplIdAsync(fplFixture.Event.Value);
-                }
-
-                var fixture = await _fixtureRepository.GetByFplIdAsync(fplFixture.Id);
-                if (fixture == null)
-                {
-                    fixture = new Fixture { FplId = fplFixture.Id };
-                    await _fixtureRepository.AddAsync(fixture);
-                }
-
-                fixture.GameweekId = gameweek?.Id;
-                fixture.HomeTeamId = homeTeam.Id;
-                fixture.AwayTeamId = awayTeam.Id;
-                fixture.HomeScore = fplFixture.TeamHScore;
-                fixture.AwayScore = fplFixture.TeamAScore;
-                fixture.KickoffTime = fplFixture.KickoffTime;
-                fixture.HomeDifficulty = fplFixture.TeamHDifficulty;
-                fixture.AwayDifficulty = fplFixture.TeamADifficulty;
-                fixture.IsFinished = fplFixture.Finished;
-            }
-
-            await _fixtureRepository.SaveChangesAsync();
+            await SyncFixturesAsync(await _fplApiClient.GetFixturesAsync());
         }
 
         public async Task SyncLiveGameweekAsync(int gameweekFplId)
@@ -146,6 +113,8 @@ namespace FantasyApp.BusinessLogic.Services
             {
                 return;
             }
+
+            await SyncFixturesAsync(await _fplApiClient.GetFixturesAsync(gameweekFplId));
 
             var live = await _fplApiClient.GetGameweekLiveAsync(gameweekFplId);
 
@@ -177,6 +146,44 @@ namespace FantasyApp.BusinessLogic.Services
             }
 
             await _playerGameweekStatRepository.SaveChangesAsync();
+        }
+
+        private async Task SyncFixturesAsync(List<FplFixtureDto> fixtures)
+        {
+            foreach (var fplFixture in fixtures)
+            {
+                var homeTeam = await _teamRepository.GetByFplIdAsync(fplFixture.TeamH);
+                var awayTeam = await _teamRepository.GetByFplIdAsync(fplFixture.TeamA);
+                if (homeTeam == null || awayTeam == null)
+                {
+                    continue;
+                }
+
+                Gameweek? gameweek = null;
+                if (fplFixture.Event.HasValue)
+                {
+                    gameweek = await _gameweekRepository.GetByFplIdAsync(fplFixture.Event.Value);
+                }
+
+                var fixture = await _fixtureRepository.GetByFplIdAsync(fplFixture.Id);
+                if (fixture == null)
+                {
+                    fixture = new Fixture { FplId = fplFixture.Id };
+                    await _fixtureRepository.AddAsync(fixture);
+                }
+
+                fixture.GameweekId = gameweek?.Id;
+                fixture.HomeTeamId = homeTeam.Id;
+                fixture.AwayTeamId = awayTeam.Id;
+                fixture.HomeScore = fplFixture.TeamHScore;
+                fixture.AwayScore = fplFixture.TeamAScore;
+                fixture.KickoffTime = fplFixture.KickoffTime;
+                fixture.HomeDifficulty = fplFixture.TeamHDifficulty;
+                fixture.AwayDifficulty = fplFixture.TeamADifficulty;
+                fixture.IsFinished = fplFixture.Finished || fplFixture.FinishedProvisional;
+            }
+
+            await _fixtureRepository.SaveChangesAsync();
         }
     }
 }

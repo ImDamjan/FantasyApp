@@ -11,16 +11,21 @@ namespace FantasyApp.BusinessLogic.Services
 
         public static long? ResolveEffectiveCaptain(
             IReadOnlyCollection<GameweekPick> picks,
-            Dictionary<long, PlayerGameweekStat> statsByPlayerId)
+            Dictionary<long, PlayerGameweekStat> statsByPlayerId,
+            ISet<long> teamIdsWithMatchesLeft)
         {
+            bool CanStillScore(GameweekPick pick) =>
+                (statsByPlayerId.TryGetValue(pick.PlayerId, out var stat) && stat.Minutes > 0) ||
+                (pick.Player != null && teamIdsWithMatchesLeft.Contains(pick.Player.TeamId));
+
             var captain = picks.FirstOrDefault(p => p.IsCaptain);
-            if (captain != null && statsByPlayerId.TryGetValue(captain.PlayerId, out var captainStat) && captainStat.Minutes > 0)
+            if (captain != null && CanStillScore(captain))
             {
                 return captain.PlayerId;
             }
 
             var vice = picks.FirstOrDefault(p => p.IsViceCaptain);
-            if (vice != null && statsByPlayerId.TryGetValue(vice.PlayerId, out var viceStat) && viceStat.Minutes > 0)
+            if (vice != null && CanStillScore(vice))
             {
                 return vice.PlayerId;
             }
@@ -46,9 +51,10 @@ namespace FantasyApp.BusinessLogic.Services
         public static int CalculateRawPoints(
             IReadOnlyCollection<GameweekPick> picks,
             Dictionary<long, PlayerGameweekStat> statsByPlayerId,
+            ISet<long> teamIdsWithMatchesLeft,
             ChipType? chip)
         {
-            var effectiveCaptainPlayerId = ResolveEffectiveCaptain(picks, statsByPlayerId);
+            var effectiveCaptainPlayerId = ResolveEffectiveCaptain(picks, statsByPlayerId, teamIdsWithMatchesLeft);
             return picks.Sum(pick =>
             {
                 var points = statsByPlayerId.TryGetValue(pick.PlayerId, out var stat) ? stat.TotalPoints : 0;

@@ -34,5 +34,8 @@ namespace FantasyApp.Common.Dtos.Fpl
 
         [JsonPropertyName("finished")]
         public bool Finished { get; set; }
+
+        [JsonPropertyName("finished_provisional")]
+        public bool FinishedProvisional { get; set; }
     }
 }

@@ -7,7 +7,7 @@ namespace FantasyApp.Common.Interfaces
     public interface IFplApiClient
     {
         Task<FplBootstrapResponse> GetBootstrapStaticAsync();
-        Task<List<FplFixtureDto>> GetFixturesAsync();
+        Task<List<FplFixtureDto>> GetFixturesAsync(int? eventId = null);
         Task<FplLiveResponse> GetGameweekLiveAsync(int eventId);
     }
 }

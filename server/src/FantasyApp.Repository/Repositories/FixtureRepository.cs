@@ -33,6 +33,16 @@ namespace FantasyApp.Repository.Repositories
                 .ToListAsync();
         }
 
+        public async Task<HashSet<long>> GetTeamIdsWithMatchesLeftAsync(long gameweekId)
+        {
+            var unfinished = await _dbContext.Fixtures
+                .Where(f => f.GameweekId == gameweekId && !f.IsFinished)
+                .Select(f => new { f.HomeTeamId, f.AwayTeamId })
+                .ToListAsync();
+
+            return unfinished.SelectMany(f => new[] { f.HomeTeamId, f.AwayTeamId }).ToHashSet();
+        }
+
         public async Task AddAsync(Fixture fixture)
         {
             await _dbContext.Fixtures.AddAsync(fixture);

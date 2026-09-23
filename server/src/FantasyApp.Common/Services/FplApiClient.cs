@@ -22,9 +22,10 @@ namespace FantasyApp.Common.Services
             return response ?? new FplBootstrapResponse();
         }
 
-        public async Task<List<FplFixtureDto>> GetFixturesAsync()
+        public async Task<List<FplFixtureDto>> GetFixturesAsync(int? eventId = null)
         {
-            var response = await _httpClient.GetFromJsonAsync<List<FplFixtureDto>>("fixtures/");
+            var path = eventId.HasValue ? $"fixtures/?event={eventId.Value}" : "fixtures/";
+            var response = await _httpClient.GetFromJsonAsync<List<FplFixtureDto>>(path);
             return response ?? new List<FplFixtureDto>();
         }
 

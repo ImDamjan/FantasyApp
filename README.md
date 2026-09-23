@@ -63,7 +63,7 @@ Projekat se sastoji od dva dela:
 | Sastav tima | 2 golmana, 5 odbrambenih, 5 veznih, 3 napadača |
 | Maksimalno igrača iz istog kluba | 3 |
 | Početna postava | 11 igrača: tačno 1 golman, 3-5 odbrambenih, 3-5 veznih, 1-3 napadača |
-| Kapiten | dupli poeni; ako ne odigra ni minut, dupli poeni idu vice-kapitenu |
+| Kapiten | dupli poeni; ako ne odigra ni minut, dupli poeni idu vice-kapitenu, ali tek kada se završe sve utakmice kapitenovog kluba u tom kolu (ako klub nema utakmicu u kolu, odmah) |
 | Novi tim | neograničeni transferi do prvog roka posle pravljenja tima |
 | Besplatni transferi | 1 novi po kolu, neiskorišćeni se prenose, najviše 5 |
 | Dodatni transfer | -4 poena; upisuje se kolu za koje važi i oduzima od ukupnog zbira tek kada prođe rok tog kola (poeni samog kola se ne smanjuju) |

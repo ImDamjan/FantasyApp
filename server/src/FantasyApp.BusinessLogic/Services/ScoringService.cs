@@ -12,17 +12,20 @@ namespace FantasyApp.BusinessLogic.Services
         private readonly IPlayerGameweekStatRepository _playerGameweekStatRepository;
         private readonly IGameweekPickRepository _pickRepository;
         private readonly IUserGameweekScoreRepository _scoreRepository;
+        private readonly IFixtureRepository _fixtureRepository;
 
         public ScoringService(
             IGameweekRepository gameweekRepository,
             IPlayerGameweekStatRepository playerGameweekStatRepository,
             IGameweekPickRepository pickRepository,
-            IUserGameweekScoreRepository scoreRepository)
+            IUserGameweekScoreRepository scoreRepository,
+            IFixtureRepository fixtureRepository)
         {
             _gameweekRepository = gameweekRepository;
             _playerGameweekStatRepository = playerGameweekStatRepository;
             _pickRepository = pickRepository;
             _scoreRepository = scoreRepository;
+            _fixtureRepository = fixtureRepository;
         }
 
         public async Task RecalculateGameweekScoresAsync(long gameweekId)
@@ -38,6 +41,7 @@ namespace FantasyApp.BusinessLogic.Services
                 .Where(p => p.FantasyTeam != null)
                 .GroupBy(p => p.FantasyTeam!.UserId);
             var scores = await _scoreRepository.GetForGameweekAsync(gameweekId);
+            var teamIdsWithMatchesLeft = await _fixtureRepository.GetTeamIdsWithMatchesLeftAsync(gameweekId);
 
             foreach (var teamPicks in picksByTeam)
             {
@@ -48,7 +52,7 @@ namespace FantasyApp.BusinessLogic.Services
                     await _scoreRepository.AddAsync(score);
                 }
 
-                score.RawPoints = ScoringRules.CalculateRawPoints(teamPicks.ToList(), statsByPlayerId, score.ChipUsed);
+                score.RawPoints = ScoringRules.CalculateRawPoints(teamPicks.ToList(), statsByPlayerId, teamIdsWithMatchesLeft, score.ChipUsed);
                 score.NetPoints = score.RawPoints - score.TransferCost;
                 score.IsFinal = gameweek.IsFinished;
             }

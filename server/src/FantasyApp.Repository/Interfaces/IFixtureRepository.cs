@@ -8,6 +8,7 @@ namespace FantasyApp.Repository.Interfaces
     {
         Task<Fixture?> GetByFplIdAsync(int fplId);
         Task<List<Fixture>> GetUpcomingForTeamAsync(long teamId, int count);
+        Task<HashSet<long>> GetTeamIdsWithMatchesLeftAsync(long gameweekId);
         Task AddAsync(Fixture fixture);
         Task SaveChangesAsync();
     }

@@ -134,7 +134,10 @@ namespace FantasyApp.BusinessLogic.Services
                 result.ChipUsed = chip?.ToString();
             }
 
-            var effectiveCaptainPlayerId = ScoringRules.ResolveEffectiveCaptain(picks, statsByPlayerId);
+            var teamIdsWithMatchesLeft = result.IsScoring
+                ? await _fixtureRepository.GetTeamIdsWithMatchesLeftAsync(gameweek!.Id)
+                : new HashSet<long>();
+            var effectiveCaptainPlayerId = ScoringRules.ResolveEffectiveCaptain(picks, statsByPlayerId, teamIdsWithMatchesLeft);
 
             foreach (var pick in picks.OrderBy(p => p.IsStarting ? 0 : 1).ThenBy(p => p.BenchOrder))
             {
