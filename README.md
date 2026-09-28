@@ -2,11 +2,12 @@
 
 Veb aplikacija za fantasy fudbal po uzoru na zvanični Fantasy Premier League (FPL). Korisnik pravi tim od 15 igrača Premijer lige sa budžetom od 100 miliona, bira početnu postavu i kapitena, pravi izmene (transfere) između kola, koristi čipove i takmiči se sa drugim korisnicima u ligama. Podaci o igračima, klubovima, kolima, utakmicama i poenima preuzimaju se automatski sa javnog FPL API-ja.
 
-Projekat se sastoji od dva dela:
+Projekat se sastoji od tri dela:
 
-| Deo | Tehnologija | Folder |
+| Deo | Tehnologija | Lokacija |
 | --- | --- | --- |
-| Backend (REST API) | .NET 8, ASP.NET Core, EF Core, SQL Server, ASP.NET Core Identity, JWT | `server/` |
+| Baza podataka | Microsoft SQL Server 2022 | Docker kontejner ili lokalna instalacija |
+| Backend (REST API) | .NET 8, ASP.NET Core, EF Core, ASP.NET Core Identity, JWT | `server/` |
 | Frontend (SPA) | Angular 22, standalone komponente, signali, SCSS | `client/` |
 
 ## Sadržaj
@@ -16,10 +17,8 @@ Projekat se sastoji od dva dela:
 3. [Arhitektura](#arhitektura)
 4. [Model podataka](#model-podataka)
 5. [Sinhronizacija sa FPL API-jem](#sinhronizacija-sa-fpl-api-jem)
-6. [REST API](#rest-api)
-7. [Pokretanje projekta](#pokretanje-projekta)
-8. [Testiranje](#testiranje)
-9. [Struktura foldera](#struktura-foldera)
+6. [Pokretanje projekta](#pokretanje-projekta)
+7. [Struktura foldera](#struktura-foldera)
 
 ## Funkcionalnosti
 
@@ -35,24 +34,27 @@ Projekat se sastoji od dva dela:
 
 - Pregled tima: poeni u tekućem kolu, prosek i najveći broj poena u kolu, ukupni poeni, plasman i broj učesnika.
 - Prikaz tima na terenu sa poenima svakog igrača; klik na igrača otvara statistiku (minuti, golovi, asistencije, bonus i ostalo), formu i naredne utakmice.
+- Tim napravljen posle roka tekućeg kola se prikazuje bez poena, uz poruku od kog kola počinje da boduje.
 - Odbrojavanje do sledećeg roka (deadline) i tabela svih narednih rokova.
 
 ### Izbor tima (Pick Team)
 
 - Pravljenje početnog tima od 15 igrača klikom na prazna mesta na terenu, uz pretragu i filtere (pozicija, maksimalna cena).
 - Opcija **Auto Pick** koja nasumično sastavlja validan tim i iskoristi skoro ceo budžet.
-- Izmena postave: zamene između početnih 11 i klupe (dozvoljene su samo zamene koje ostavljaju validnu formaciju), redosled klupe, kapiten i vice-kapiten.
-- Aktiviranje čipova: Triple Captain, Bench Boost i Wild Card.
+- Klik na igrača otvara meni za izbor kapitena i vice-kapitena, zamenu sa klupom ili uklanjanje iz tima (dok se tim pravi).
+- Izmena postave: zamene između početnih 11 i klupe (dozvoljene su samo zamene koje ostavljaju validnu formaciju) i redosled klupe.
+- Aktiviranje čipova: Triple Captain, Bench Boost i Wild Card, uz potvrdu pre aktiviranja.
+- Obaveštenja o uspehu i greškama prikazuju se kao toast poruke.
 
 ### Transferi
 
-- Označavanje jednog ili više igrača za prodaju i izbor zamene iz liste igrača iste pozicije.
+- Označavanje jednog ili više igrača za prodaju i izbor zamene iz liste igrača iste pozicije (pretraga, filter po maksimalnoj ceni).
 - Pregled budžeta posle transfera, broja besplatnih transfera i cene u poenima pre potvrde.
 
 ### Lige
 
 - Svaki korisnik je automatski član zvanične lige **Overall League**.
-- Pravljenje privatne lige (dobija se kod od 6 znakova) i pridruživanje tuđoj ligi pomoću koda.
+- Pravljenje privatne lige (naziv 3-20 znakova, dobija se kod od 6 znakova koji može da se kopira jednim klikom) i pridruživanje tuđoj ligi pomoću koda.
 - Tabela lige sa ukupnim poenima, poenima u tekućem kolu i promenom plasmana u odnosu na prethodno kolo.
 
 ## Pravila igre
@@ -71,13 +73,9 @@ Projekat se sastoji od dva dela:
 | Prodaja kapitena | vice-kapiten postaje kapiten, a za vice-kapitena se bira najskuplji igrač iz postave |
 | Triple Captain | kapiten dobija trostruke poene u kolu |
 | Bench Boost | poeni igrača sa klupe se računaju u kolu |
-| Wild Card | neograničen broj besplatnih transfera do roka; ako je već uzet -4 u tom kolu, poništava se |
+| Wild Card | neograničen broj besplatnih transfera do roka; ako je već uzet -4 u tom kolu, poništava se; ne može da se aktivira dok tim još ima neograničene transfere pre prvog roka |
 
-Svaki čip može da se iskoristi jednom u sezoni, a u jednom kolu može biti aktivan najviše jedan čip. Transferi, izmene postave i čipovi uvek važe za naredno kolo.
-
-### Snimak tima po kolu
-
-U trenutku kada prođe rok (deadline) kola, sastav svakog tima (15 igrača, postava, klupa, kapiten, vice-kapiten i aktivni čip) se zamrzava u tabeli `GameweekPicks`. Poeni za kolo se računaju isključivo iz tog snimka, pa izmene napravljene posle roka važe tek za sledeće kolo. Tim napravljen posle roka tekućeg kola ne dobija poene za to kolo: na početnoj strani se prikazuje bez poena, uz poruku od kog kola počinje da boduje. Snimak pravi pozadinski servis, a pre svake izmene tima proverava se da li je u međuvremenu prošao neki rok, tako da izmena ne može da se provuče između roka i snimanja.
+Svaki čip može da se iskoristi jednom u sezoni, a u jednom kolu može biti aktivan najviše jedan čip. Transferi, izmene postave i čipovi uvek važe za naredno kolo; poeni za kolo se računaju iz tima kakav je bio u trenutku roka.
 
 ## Arhitektura
 
@@ -95,8 +93,10 @@ FantasyApp.Api           -> svi projekti: kontroleri, DI konfiguracija, pozadins
 
 Ključni delovi:
 
-- **Autentifikacija**: korisnike, heširanje lozinki i tokene za reset lozinke vodi ASP.NET Core Identity (`ApplicationUser : IdentityUser<long>`). Identity tabele su preimenovane u `Users`, `Roles`, `UserRoles` i slično. JWT sadrži `sub`, `email`, ime i `jti`; aplikacija nema uloge, pa je `[Authorize]` dovoljan za zaštitu ruta. Refresh tokeni se čuvaju u tabeli `RefreshTokens`.
-- **Servisi**: `AuthService`, `SquadService` (tim, postava, kapiten, čipovi), `TransferService`, `LeagueService`, `PointsService`, `ScoringService` (obračun poena po kolu iz snimka), `GameweekSnapshotService` (snimak timova na roku), `PlayerService`, `GameweekService` i `FplDataSyncService`.
+- **Autentifikacija**: korisnike, heširanje lozinki i tokene za reset lozinke vodi ASP.NET Core Identity (`ApplicationUser : IdentityUser<long>`). Identity tabele su preimenovane u `Users`, `Roles`, `UserRoles` i slično. JWT sadrži `sub`, `email`, ime i `jti`; aplikacija nema uloge, pa je `[Authorize]` dovoljan za zaštitu kontrolera. Refresh tokeni se čuvaju u tabeli `RefreshTokens`.
+- **Kontroleri**: `AuthController`, `PlayersController`, `SquadController`, `TransfersController`, `PointsController`, `LeaguesController` i `GameweeksController`.
+- **Servisi**: `AuthService`, `SquadService` (tim, postava, kapiten, čipovi), `TransferService`, `LeagueService`, `PointsService`, `ScoringService` (obračun poena po kolu), `GameweekSnapshotService` (čuvanje tima u trenutku roka), `PlayerService`, `GameweekService` i `FplDataSyncService`. Pravila bodovanja i transfera su izdvojena u `ScoringRules`, `TransferAllowance` i `TransferCostCalculator`.
+- **Pozadinski servis**: `FplSyncService` periodično sinhronizuje podatke sa FPL-om i obračunava poene (detaljnije u sekciji o sinhronizaciji).
 - **Rezultat servisa**: servisi vraćaju `ServiceResult<T>` (uspeh sa podacima ili poruka o grešci), a kontroleri ga pretvaraju u `200 OK` ili `400 Bad Request`.
 - **Datumi**: `UtcDateTimeConverter` obezbeđuje da se svi datumi šalju kao UTC (sa sufiksom `Z`), pa ih browser ispravno prikazuje u lokalnoj vremenskoj zoni.
 
@@ -107,8 +107,9 @@ Struktura `client/src/app/` je podeljena po funkcionalnostima:
 ```
 core/        servisi (Auth, Squad, Transfer, League, Points, Player, Gameweek, Toast),
              guard-ovi, HTTP interceptor, modeli, konstante, validatori
-shared/      komponente koje koristi više stranica: app-shell (bočni meni), teren (pitch-view,
-             squad-build-pitch), kartica igrača, pretraga igrača, popup sa statistikom, toast poruke
+shared/      komponente koje koristi više stranica: app-shell (bočni meni), logo, polje forme,
+             teren (pitch-view, squad-build-pitch), kartica i dres igrača, meni akcija igrača,
+             pretraga igrača, popup sa statistikom, toast poruke; zajednički SCSS za auth kartice
 features/
   auth/      prijava/registracija, zaboravljena lozinka, reset lozinke
   home/      početna strana
@@ -119,7 +120,8 @@ features/
 
 - Stanje se čuva u Angular signalima; aplikacija radi bez `zone.js`.
 - `authInterceptor` dodaje `Authorization: Bearer` header i osvežava token na 401. Više istovremenih 401 odgovora čeka na isto osvežavanje.
-- `authGuard` pušta na zaštićene stranice samo prijavljene korisnike, a `guestGuard` preusmerava prijavljene korisnike sa `/auth` stranica.
+- `authGuard` pušta na zaštićene stranice samo prijavljene korisnike, a `guestGuard` preusmerava već prijavljene korisnike sa stranica za prijavu. Stranice se učitavaju lenjo (lazy loading).
+- Access i refresh token se čuvaju u `localStorage` (`TokenStorageService`).
 - Stilovi su čist SCSS bez UI biblioteke; boje i ostale vrednosti dizajna su CSS promenljive `--fa-*` u `src/styles.scss`.
 
 ## Model podataka
@@ -135,7 +137,7 @@ features/
 | `PlayerGameweekStats` | statistika igrača po kolu (poeni, minuti, golovi, asistencije, ...) |
 | `FantasyTeams` | tim korisnika: budžet, besplatni transferi, iskorišćeni i aktivni čipovi |
 | `SquadPlayers` | trenutni tim od 15 igrača (važi za naredni rok): postava, redosled klupe, kapiten, vice-kapiten |
-| `GameweekPicks` | zamrznut tim za svako kolo, pravi se kada prođe rok; iz njega se računaju poeni |
+| `GameweekPicks` | tim kakav je bio u trenutku roka svakog kola; iz njega se računaju poeni |
 | `Transfers` | istorija transfera po kolu |
 | `Leagues`, `LeagueMemberships` | lige (naziv 3-20 znakova) i članstva |
 | `UserGameweekScores` | poeni korisnika po kolu: osvojeni, cena transfera, neto, iskorišćen čip |
@@ -147,43 +149,14 @@ Cene se u bazi čuvaju kao celi brojevi u desetinama miliona (na primer, 105 zna
 Pozadinski servis `FplSyncService` se pokreće zajedno sa API-jem:
 
 - **Na startu i zatim na svakih 60 minuta** preuzima `bootstrap-static` i `fixtures` (klubovi, igrači, cene, kola, utakmice).
-- **Na svakih 5 minuta** pravi snimke timova za kola čiji je rok prošao, a zatim za svako kolo koje je počelo (prva utakmica kola je startovala) i čiji poeni još nisu konačni preuzima statistiku uživo (`event/{id}/live`) i ponovo obračunava poene. Bodovanje traje od prve do poslednje utakmice kola; kada FPL označi kolo kao završeno (posle poslednje utakmice i bonus poena), poeni postaju konačni i kolo se više ne osvežava.
+- **Na svakih 5 minuta** čuva timove za kola čiji je rok prošao, a zatim za svako kolo koje je počelo (prva utakmica kola je startovala) i čiji poeni još nisu konačni preuzima statistiku uživo (`event/{id}/live`) i ponovo obračunava poene. Bodovanje traje od prve do poslednje utakmice kola; kada FPL označi kolo kao završeno (posle poslednje utakmice i bonus poena), poeni postaju konačni i kolo se više ne osvežava.
 - Tekuće i sledeće kolo se određuju po vremenu roka, a ne po FPL oznakama koje se osvežavaju samo jednom na sat.
 
 Za prvu sinhronizaciju je potreban pristup internetu; dok se ona ne završi, lista igrača je prazna.
 
-## REST API
-
-Sve rute osim prvih šest u tabeli zahtevaju header `Authorization: Bearer <accessToken>`. Kada API radi u Development okruženju, interaktivna dokumentacija je dostupna na `http://localhost:5080/swagger`.
-
-| Metoda | Ruta | Opis |
-| --- | --- | --- |
-| POST | `/api/auth/register` | registracija |
-| POST | `/api/auth/login` | prijava |
-| POST | `/api/auth/refresh-token` | novi par tokena na osnovu refresh tokena |
-| POST | `/api/auth/revoke-token` | opoziv refresh tokena (odjava) |
-| POST | `/api/auth/forgot-password` | slanje emaila za reset lozinke |
-| POST | `/api/auth/reset-password` | postavljanje nove lozinke |
-| GET | `/api/auth/me` | podaci o prijavljenom korisniku |
-| GET | `/api/players` | lista igrača; parametri `position`, `maxPrice`, `search`, `teamId`, `page`, `pageSize` |
-| GET | `/api/players/{id}` | detalji igrača sa narednih 5 utakmica |
-| GET | `/api/squad` | tim korisnika, uključujući preostale besplatne transfere i da li su transferi neograničeni |
-| POST | `/api/squad` | izbor početnog tima (15 igrača, postava, kapiteni, klupa) |
-| PUT | `/api/squad/lineup` | izmena postave, klupe i kapitena |
-| PUT | `/api/squad/captain` | izmena samo kapitena i vice-kapitena |
-| PUT | `/api/squad/chip` | aktiviranje čipa (`TripleCaptain`, `BenchBoost`, `WildCard`) |
-| POST | `/api/transfers` | potvrda jednog ili više transfera |
-| GET | `/api/transfers/history` | istorija transfera |
-| GET | `/api/points/summary` | pregled poena i plasmana |
-| GET | `/api/points/history` | poeni po kolima |
-| GET | `/api/points/squad` | tim iz snimka tekućeg kola sa poenima; `isScoring` je `false` ako tim nije postojao u trenutku roka |
-| GET | `/api/leagues/mine` | lige korisnika |
-| POST | `/api/leagues` | pravljenje lige |
-| POST | `/api/leagues/join` | pridruživanje ligi pomoću koda |
-| GET | `/api/leagues/{id}/standings` | tabela lige |
-| GET | `/api/gameweeks/deadlines` | rokovi za kola |
-
 ## Pokretanje projekta
+
+Projekat može da se pokrene na Linuxu i na Windowsu. Razlika je uglavnom u načinu pokretanja SQL Servera; koraci za backend i frontend su isti na oba sistema.
 
 ### Preduslovi
 
@@ -192,12 +165,16 @@ Sve rute osim prvih šest u tabeli zahtevaju header `Authorization: Bearer <acce
 | .NET SDK | 8.0 | `dotnet --version` |
 | Node.js | 22 ili noviji | uz npm |
 | Angular CLI | 22 | `npm install -g @angular/cli` |
-| Docker | bilo koja novija | za SQL Server |
 | dotnet-ef | 8.x | `dotnet tool install --global dotnet-ef` |
+| SQL Server | 2022 | preko Dockera (Linux i Windows) ili lokalna instalacija (Windows) |
 
 ### 1. Pokretanje SQL Servera
 
-SQL Server se pokreće u Docker kontejneru (na Linux distribucijama poput Fedore ne postoji nativna instalacija). Lozinka mora da ima najmanje 8 znakova, veliko i malo slovo, broj i specijalni znak.
+Lozinka za `sa` korisnika mora da ima najmanje 8 znakova, veliko i malo slovo, broj i specijalni znak.
+
+#### Opcija A: Linux (Docker)
+
+Na Linux distribucijama poput Fedore SQL Server nema nativnu instalaciju, pa se pokreće u Docker kontejneru:
 
 ```bash
 docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=<lozinka>" \
@@ -207,26 +184,57 @@ docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=<lozinka>" \
 
 Kontejner se posle restarta računara pokreće sam. Ako je zaustavljen, pokreće se komandom `docker start fantasyapp-sqlserver`.
 
-### 2. Tajni podaci (user secrets)
+Connection string:
 
-Tajni podaci se ne nalaze u `appsettings.json` i ne ulaze u git. Podešavaju se preko `dotnet user-secrets` iz foldera API projekta:
-
-```bash
-cd server/src/FantasyApp.Api
-
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" \
-  "Server=localhost,1433;Database=FantasyAppDb;User Id=sa;Password=<lozinka>;TrustServerCertificate=True;"
-
-# nasumičan ključ od najmanje 32 znaka, na primer: openssl rand -base64 48
-dotnet user-secrets set "Jwt:Key" "<dugacak-nasumican-kljuc>"
-
-# potrebno samo za slanje emaila za reset lozinke (Gmail App Password)
-dotnet user-secrets set "Smtp:Username" "<gmail-adresa>"
-dotnet user-secrets set "Smtp:FromEmail" "<gmail-adresa>"
-dotnet user-secrets set "Smtp:AppPassword" "<gmail-app-password>"
+```
+Server=localhost,1433;Database=FantasyAppDb;User Id=sa;Password=<lozinka>;TrustServerCertificate=True;
 ```
 
-Gmail App Password se pravi na Google nalogu (Security, 2-Step Verification, App passwords). Bez SMTP podešavanja aplikacija radi normalno, ali slanje emaila za reset lozinke neće uspeti.
+#### Opcija B: Windows
+
+**Lokalna instalacija** (preporučeno): preuzeti i instalirati [SQL Server 2022 Developer ili Express](https://www.microsoft.com/sql-server/sql-server-downloads). Posle instalacije servis se pokreće automatski (proverava se u aplikaciji *Services*, servis *SQL Server (MSSQLSERVER)* ili *SQL Server (SQLEXPRESS)*). Bazu je zgodno pregledati preko SQL Server Management Studio (SSMS).
+
+Connection string sa Windows autentifikacijom:
+
+```
+# Developer edicija (podrazumevana instanca)
+Server=localhost;Database=FantasyAppDb;Trusted_Connection=True;TrustServerCertificate=True;
+
+# Express edicija
+Server=localhost\SQLEXPRESS;Database=FantasyAppDb;Trusted_Connection=True;TrustServerCertificate=True;
+```
+
+**Docker Desktop**: ako je instaliran Docker Desktop, može se koristiti ista komanda kao na Linuxu (u PowerShell-u se red nastavlja znakom `` ` `` umesto `\`) i isti connection string kao u opciji A:
+
+```powershell
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=<lozinka>" `
+  -p 1433:1433 --name fantasyapp-sqlserver --restart unless-stopped `
+  -d mcr.microsoft.com/mssql/server:2022-latest
+```
+
+### 2. Podešavanje backenda
+
+Connection string, JWT ključ i SMTP podaci se ne upisuju u `appsettings.json` (taj fajl je u gitu i sadrži samo prazna polja). Upisuju se u `server/src/FantasyApp.Api/appsettings.Development.json`, koji je u `.gitignore` i ostaje samo lokalno:
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "<connection string iz koraka 1>"
+  },
+  "Jwt": {
+    "Key": "<nasumičan ključ od najmanje 32 znaka>"
+  },
+  "Smtp": {
+    "Username": "<gmail-adresa>",
+    "FromEmail": "<gmail-adresa>",
+    "AppPassword": "<gmail-app-password>"
+  }
+}
+```
+
+U JSON-u se obrnuta kosa crta piše dvostruko, pa za Express ediciju vrednost glasi `"Server=localhost\\SQLEXPRESS;..."`.
+
+SMTP podaci su potrebni samo za slanje emaila za reset lozinke (Gmail App Password se pravi na Google nalogu: Security, 2-Step Verification, App passwords). Bez njih aplikacija radi normalno, ali slanje emaila neće uspeti.
 
 Ostala podešavanja nisu tajna i nalaze se u `server/src/FantasyApp.Api/appsettings.json`:
 
@@ -241,7 +249,7 @@ Ostala podešavanja nisu tajna i nalaze se u `server/src/FantasyApp.Api/appsetti
 
 ### 3. Kreiranje baze
 
-Migracije se ne primenjuju automatski pri startu, pa se baza kreira ručno:
+Migracije se ne primenjuju automatski pri startu, pa se baza kreira ručno (isto na Linuxu i Windowsu):
 
 ```bash
 cd server/src/FantasyApp.Api
@@ -258,7 +266,7 @@ cd src/FantasyApp.Api
 dotnet run --urls "http://localhost:5080"
 ```
 
-API radi na `http://localhost:5080`, a Swagger na `http://localhost:5080/swagger`. Pri prvom pokretanju API sam napravi ligu "Overall League" i počinje sinhronizaciju sa FPL-om, što traje oko minut.
+API radi na `http://localhost:5080`, a Swagger (interaktivna dokumentacija API-ja) na `http://localhost:5080/swagger`. Pri prvom pokretanju API sam napravi ligu "Overall League" i počinje sinhronizaciju sa FPL-om, što traje oko minut.
 
 ### 5. Pokretanje frontenda
 
@@ -279,22 +287,13 @@ dotnet ef migrations add <Naziv> --project ../FantasyApp.Repository --startup-pr
 # brisanje baze
 dotnet ef database drop --project ../FantasyApp.Repository --startup-project . --force
 
-# pregled podataka u bazi
+# pregled podataka u bazi (Docker)
 docker exec -it fantasyapp-sqlserver /opt/mssql-tools18/bin/sqlcmd \
   -S localhost -U sa -P '<lozinka>' -C -d FantasyAppDb
 
 # produkcioni build frontenda (rezultat u client/dist/client)
 cd client && ng build
 ```
-
-## Testiranje
-
-```bash
-cd client
-ng test --watch=false
-```
-
-Frontend testovi koriste Vitest. Za backend trenutno ne postoji test projekat. API može ručno da se testira preko Swagger-a.
 
 ## Struktura foldera
 
@@ -309,7 +308,7 @@ FantasyApp/
   server/
     FantasyApp.sln
     src/
-      FantasyApp.Api/             Program.cs, kontroleri, pozadinski servis, JSON konverter
+      FantasyApp.Api/             Program.cs, kontroleri, pozadinski servis, JSON konverter, podešavanja
       FantasyApp.BusinessLogic/   servisi i interfejsi servisa
       FantasyApp.Common/          JWT, email, FPL klijent, podešavanja
       FantasyApp.Entity/          modeli i DTO klase
