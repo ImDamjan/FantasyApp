@@ -1,0 +1,134 @@
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 8, 30, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+  padding: 0 0.75rem;
+
+  @media (min-width: 640px) {
+    align-items: center;
+  }
+}
+
+.menu-card {
+  width: 100%;
+  max-width: 320px;
+  background: var(--fa-white);
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  margin-bottom: 0;
+
+  @media (min-width: 640px) {
+    border-radius: 14px;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  }
+}
+
+.menu-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  background: linear-gradient(135deg, var(--fa-purple-dark), var(--fa-purple));
+  color: var(--fa-white);
+}
+
+.menu-shirt {
+  width: 40px;
+  flex: 0 0 auto;
+}
+
+.menu-name {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.menu-team {
+  font-size: 0.78rem;
+  opacity: 0.85;
+}
+
+.menu-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--fa-white);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+}
+
+.menu-actions {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-action {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--fa-white);
+  padding: 0.85rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--fa-purple-dark);
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(4, 245, 152, 0.1);
+  }
+
+  &.active {
+    color: var(--fa-green-dark, #0a8a4c);
+  }
+
+  &.danger {
+    color: #c0392b;
+  }
+}
+
+.menu-action-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--fa-purple-dark);
+  flex: 0 0 auto;
+
+  &.captain {
+    background: var(--fa-green);
+  }
+
+  &.vice {
+    background: var(--fa-cyan);
+  }
+}
+
+.menu-hint {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  font-size: 0.8rem;
+  color: var(--fa-text-muted);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.menu-action-icon {
+  width: 22px;
+  text-align: center;
+  font-size: 1rem;
+  flex: 0 0 auto;
+}

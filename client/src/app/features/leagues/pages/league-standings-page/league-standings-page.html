@@ -1,0 +1,46 @@
+<app-shell (logout)="onLogout()">
+<div class="page">
+  <header class="page-header">
+    <a routerLink="/leagues" class="btn btn-link">&larr; Leagues</a>
+    <h1>{{ standings()?.leagueName ?? 'Standings' }}</h1>
+    <span></span>
+  </header>
+
+  @if (loadFailed()) {
+    <p class="hint">Could not load standings.</p>
+  } @else if (loading()) {
+    <p class="hint">Loading standings...</p>
+  } @else {
+    <table class="standings-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Rank</th>
+          <th>Player</th>
+          <th>GW</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of standings()?.entries; track entry.userId) {
+          <tr>
+            <td>
+              @if (entry.previousRank === 0 || entry.previousRank === entry.rank) {
+                <span class="rank-arrow same" title="No change">&minus;</span>
+              } @else if (entry.previousRank > entry.rank) {
+                <span class="rank-arrow up" title="Moved up">&#9650;</span>
+              } @else {
+                <span class="rank-arrow down" title="Moved down">&#9660;</span>
+              }
+            </td>
+            <td>{{ entry.rank }}</td>
+            <td>{{ entry.username }}</td>
+            <td>{{ entry.gameweekPoints }}</td>
+            <td>{{ entry.totalPoints }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
+</app-shell>

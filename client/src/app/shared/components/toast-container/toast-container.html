@@ -1,0 +1,19 @@
+<div class="toast-stack">
+  @for (t of toasts(); track t.id) {
+    <div
+      class="toast"
+      [class.error]="t.type === 'error'"
+      [class.success]="t.type === 'success'"
+      (mouseenter)="onMouseEnter(t.id)"
+      (mouseleave)="onMouseLeave(t.id)"
+    >
+      <div class="toast-timer-track">
+        <div class="toast-timer-bar" [style.width.%]="percent(t)"></div>
+      </div>
+      <div class="toast-body">
+        <span class="toast-message">{{ t.message }}</span>
+        <button type="button" class="toast-close" (click)="close(t.id)" aria-label="Dismiss">&times;</button>
+      </div>
+    </div>
+  }
+</div>

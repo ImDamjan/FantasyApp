@@ -1,11 +1,156 @@
-<div class="home-page">
-  <header class="home-header">
-    <app-logo />
-    <button type="button" class="btn btn-link" (click)="onLogout()">Sign out</button>
-  </header>
+<app-shell (logout)="onLogout()">
+  <div class="home-grid">
+    <div class="home-main">
+      <div class="team-card">
+        <div class="team-card-top">
+          <div class="team-shield">
+            <svg viewBox="0 0 64 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z"
+                fill="rgba(255,255,255,0.12)"
+                stroke="#ffffff"
+                stroke-width="2.5"
+              />
+              <path d="M20 36 L28 44 L44 26" stroke="#ffffff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="team-identity">
+            <h1>{{ pointsSummary()?.teamName || 'My Team' }}</h1>
+            <p>{{ pointsSummary()?.managerName || currentUser()?.username }}</p>
+          </div>
+        </div>
 
-  <main class="home-content">
-    <h1>Welcome, {{ currentUser()?.username }}!</h1>
-    <p>Your fantasy team will live here soon.</p>
-  </main>
-</div>
+        <div class="team-card-divider"></div>
+
+        @if (pointsSummary(); as summary) {
+          <p class="gameweek-label">{{ summary.currentGameweekName || 'Preseason' }}</p>
+          <div class="team-stats">
+            <div>
+              <span class="stat-value">{{ summary.averageGameweekPoints }}</span>
+              <span class="stat-label">Average</span>
+            </div>
+            <div>
+              <span class="stat-value">{{ summary.currentGameweekPoints }}</span>
+              <span class="stat-label">Points</span>
+            </div>
+            <div>
+              <span class="stat-value">{{ summary.highestGameweekPoints }}</span>
+              <span class="stat-label">Highest</span>
+            </div>
+          </div>
+        }
+
+        <div class="team-card-actions">
+          <a routerLink="/team" class="pill-action">
+            <span class="pill-icon">&#128085;</span> Pick Team
+          </a>
+          <a routerLink="/transfers" class="pill-action">
+            <span class="pill-icon">&#8644;</span> Transfers
+          </a>
+          <a routerLink="/leagues" class="pill-action">
+            <span class="pill-icon">&#127942;</span> My Leagues
+          </a>
+        </div>
+      </div>
+
+      @if (pointsSummary(); as summary) {
+        <div class="panel stats-panel">
+          <div class="stats-row">
+            <span>Overall points</span>
+            <strong>{{ summary.totalPoints }}</strong>
+          </div>
+          <div class="stats-row">
+            <span>Overall rank</span>
+            <strong>{{ summary.overallRank | number }}</strong>
+          </div>
+          <div class="stats-row">
+            <span>Total players</span>
+            <strong>{{ summary.totalPlayers | number }}</strong>
+          </div>
+          <div class="stats-row">
+            <span>Gameweek points</span>
+            <strong>{{ summary.currentGameweekPoints }}</strong>
+          </div>
+        </div>
+      }
+
+      @if (squadPitchPlayers().length > 0) {
+        <div class="panel team-pitch-panel">
+          <h2>Your Team This Gameweek</h2>
+          @if (isScoring()) {
+            <p class="subtitle">Tap a player to see their points breakdown, form and next fixtures.</p>
+          } @else {
+            <p class="subtitle">
+              Your team was picked after this gameweek's deadline, so it starts scoring from
+              {{ nextDeadline()?.name || 'the next gameweek' }}.
+            </p>
+          }
+          <app-pitch-view [players]="squadPitchPlayers()" [useActionMenu]="false" (playerClick)="onSquadPlayerClick($event)" />
+        </div>
+      }
+    </div>
+
+    <div class="home-side">
+      @if (nextDeadline(); as next) {
+        <div class="panel deadline-panel">
+          <h2>Next Deadline</h2>
+          <p class="deadline-gw">{{ next.name }}</p>
+
+          @if (countdown(); as c) {
+            <div class="countdown">
+              <div class="countdown-unit">
+                <span class="countdown-value">{{ pad(c.days) }}</span>
+                <span class="countdown-label">Days</span>
+              </div>
+              <span class="countdown-colon">:</span>
+              <div class="countdown-unit">
+                <span class="countdown-value">{{ pad(c.hours) }}</span>
+                <span class="countdown-label">Hours</span>
+              </div>
+              <span class="countdown-colon">:</span>
+              <div class="countdown-unit">
+                <span class="countdown-value">{{ pad(c.minutes) }}</span>
+                <span class="countdown-label">Minutes</span>
+              </div>
+              <span class="countdown-colon">:</span>
+              <div class="countdown-unit">
+                <span class="countdown-value">{{ pad(c.seconds) }}</span>
+                <span class="countdown-label">Seconds</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      @if (upcomingDeadlines().length > 0) {
+        <div class="panel upcoming-panel">
+          <h2>Upcoming Deadlines</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Gameweek</th>
+                <th>Deadline</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (gw of upcomingDeadlines(); track gw.name) {
+                <tr>
+                  <td>{{ gw.name }}</td>
+                  <td>{{ formatDeadline(gw.deadlineTime) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+
+  @if (selectedPlayer(); as player) {
+    <app-player-stats-popup
+      [player]="player"
+      [showPoints]="isScoring()"
+      [captainMultiplier]="captainMultiplier()"
+      (close)="selectedPlayerId.set(null)" />
+  }
+</app-shell>

@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { FormField } from '../../../../shared/components/form-field/form-field';
 import { Logo } from '../../../../shared/components/logo/logo';
 
@@ -16,10 +17,10 @@ import { Logo } from '../../../../shared/components/logo/logo';
 export class ForgotPasswordPage {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
 
   readonly loading = signal(false);
   readonly submitted = signal(false);
-  readonly errorMessage = signal<string | null>(null);
 
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -32,14 +33,13 @@ export class ForgotPasswordPage {
     }
 
     this.loading.set(true);
-    this.errorMessage.set(null);
 
     this.authService
       .forgotPassword(this.form.getRawValue())
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: () => this.submitted.set(true),
-        error: () => this.errorMessage.set('Something went wrong. Please try again.'),
+        error: () => this.toastService.error('Something went wrong. Please try again.'),
       });
   }
 }

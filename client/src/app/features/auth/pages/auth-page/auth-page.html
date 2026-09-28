@@ -1,6 +1,5 @@
 <div class="auth-page">
   <div class="auth-card" [class.auth-card--register]="mode() === 'register'">
-    <!-- Sign In -->
     <div class="form-panel form-panel--login">
       <form [formGroup]="loginForm" (ngSubmit)="onLogin()" novalidate>
         <app-logo />
@@ -23,10 +22,6 @@
 
         <a class="forgot-link" routerLink="/auth/forgot-password">Forgot your password?</a>
 
-        @if (loginError()) {
-          <p class="form-error">{{ loginError() }}</p>
-        }
-
         <button type="submit" class="btn btn-primary" [disabled]="loading()">Sign In</button>
 
         <p class="mobile-switch">
@@ -36,7 +31,6 @@
       </form>
     </div>
 
-    <!-- Sign Up -->
     <div class="form-panel form-panel--register">
       <form [formGroup]="registerForm" (ngSubmit)="onRegister()" novalidate>
         <app-logo />
@@ -70,10 +64,6 @@
           autocomplete="new-password"
         />
 
-        @if (registerError()) {
-          <p class="form-error">{{ registerError() }}</p>
-        }
-
         <button type="submit" class="btn btn-primary" [disabled]="loading()">Sign Up</button>
 
         <p class="mobile-switch">
@@ -83,7 +73,6 @@
       </form>
     </div>
 
-    <!-- Overlay -->
     <div class="overlay-container">
       <div class="overlay">
         <div class="overlay-panel overlay-panel--left">

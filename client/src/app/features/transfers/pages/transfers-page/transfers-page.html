@@ -1,0 +1,64 @@
+<app-shell (logout)="onLogout()">
+<div class="page">
+  <header class="page-header">
+    <h1>Transfers</h1>
+  </header>
+
+  @if (loading()) {
+    <p class="hint">Loading your team...</p>
+  } @else if (!squad()?.hasPickedInitialSquad) {
+    <p class="hint">
+      You haven't picked a squad yet. <a routerLink="/team">Pick your team</a> first.
+    </p>
+  } @else {
+    <div class="transfers-layout">
+      <div class="pitch-column">
+        <div class="squad-summary">
+          <span>Budget after transfers: £{{ projectedBudget().toFixed(1) }}m</span>
+          <span>Free transfers: {{ squad()?.unlimitedTransfers ? 'Unlimited' : squad()?.freeTransfersAvailable }}</span>
+          <span [class.cost]="pointsCostPreview() > 0">Cost: {{ pointsCostPreview() > 0 ? -pointsCostPreview() : 0 }} pts</span>
+        </div>
+
+        <p class="subtitle">
+          Click a player (or the × on their shirt) to replace them — mark as many as you like, then pick a
+          replacement for each from the list.
+        </p>
+        <app-pitch-view
+          [players]="pitchPlayers()"
+          [selectedId]="activeOutId()"
+          [useActionMenu]="false"
+          [allowRemove]="true"
+          (playerClick)="onPitchPlayerClick($event)"
+          (removePlayer)="onPitchPlayerClick($event)"
+        />
+
+        @if (pendingTransfers().length > 0) {
+          <div class="pending-list">
+            <h2>Pending transfers</h2>
+            @for (t of pendingTransfers(); track t.playerOutId) {
+              <div class="pending-row">
+                <span>{{ t.playerOutName }} &rarr; {{ t.playerInName }}</span>
+                <button type="button" class="remove-btn" (click)="removePending(t.playerOutId)">&times;</button>
+              </div>
+            }
+            <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="confirmTransfers()">
+              {{ saving() ? 'Saving...' : 'Confirm transfers' }}
+            </button>
+          </div>
+        }
+      </div>
+
+      <div class="search-column">
+        <h2>{{ activeOutId() ? 'Choose a replacement' : 'Select a player on the pitch first' }}</h2>
+        <app-player-search-list
+          [excludeIds]="excludeIds()"
+          [removableIds]="removableIds()"
+          [disableAdd]="activeOutId() === null"
+          (addPlayer)="onAddReplacement($event)"
+          (removePlayer)="onPitchPlayerClick($event)"
+        />
+      </div>
+    </div>
+  }
+</div>
+</app-shell>

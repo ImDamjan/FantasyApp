@@ -15,6 +15,14 @@
   --fa-error: #d6003d;
 
   --fa-page-bg: linear-gradient(160deg, var(--fa-purple) 0%, var(--fa-purple-dark) 100%);
+
+  --fa-shell-bg: #150019;
+  --fa-panel-bg: #2b0330;
+  --fa-panel-bg-light: #380b3d;
+  --fa-panel-border: rgba(255, 255, 255, 0.08);
+  --fa-text-light: #ffffff;
+  --fa-text-light-muted: #b9a8c2;
+  --fa-header-gradient: linear-gradient(135deg, #04f5ff 0%, #37003c 100%);
 }
 
 * {
@@ -38,7 +46,7 @@ body {
     Arial,
     sans-serif;
   color: var(--fa-text-dark);
-  background: var(--fa-white);
+  background: var(--fa-shell-bg);
 }
 
 a {

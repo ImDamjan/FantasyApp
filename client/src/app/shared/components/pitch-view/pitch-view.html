@@ -1,0 +1,155 @@
+<div class="pitch">
+  <div class="pitch-lines" aria-hidden="true">
+    <div class="halfway-line"></div>
+    <div class="centre-circle"></div>
+    <div class="penalty-box penalty-box-top"></div>
+    <div class="penalty-box penalty-box-bottom"></div>
+  </div>
+
+  <div class="pitch-row">
+    @for (p of goalkeepers; track p.id) {
+      @if (p.isVacant) {
+        <button type="button" class="empty-slot" [class.empty-slot-active]="p.id === selectedId" (click)="onClick(p.id)">
+          <span class="empty-slot-plus">+</span>
+          <span class="empty-slot-label">Pick replacement</span>
+        </button>
+      } @else {
+        <app-player-card
+          [player]="{
+            webName: p.webName,
+            teamShortName: p.teamShortName,
+            priceMillions: p.priceMillions,
+            isCaptain: p.isCaptain,
+            isViceCaptain: p.isViceCaptain,
+            isSelected: p.id === selectedId,
+            isSwapTarget: isSwapTarget(p.id),
+            removable: allowRemove,
+            points: p.points,
+          }"
+          (select)="onClick(p.id)"
+          (remove)="onCardRemove(p.id)"
+        />
+      }
+    }
+  </div>
+  <div class="pitch-row">
+    @for (p of defenders; track p.id) {
+      @if (p.isVacant) {
+        <button type="button" class="empty-slot" [class.empty-slot-active]="p.id === selectedId" (click)="onClick(p.id)">
+          <span class="empty-slot-plus">+</span>
+          <span class="empty-slot-label">Pick replacement</span>
+        </button>
+      } @else {
+        <app-player-card
+          [player]="{
+            webName: p.webName,
+            teamShortName: p.teamShortName,
+            priceMillions: p.priceMillions,
+            isCaptain: p.isCaptain,
+            isViceCaptain: p.isViceCaptain,
+            isSelected: p.id === selectedId,
+            isSwapTarget: isSwapTarget(p.id),
+            removable: allowRemove,
+            points: p.points,
+          }"
+          (select)="onClick(p.id)"
+          (remove)="onCardRemove(p.id)"
+        />
+      }
+    }
+  </div>
+  <div class="pitch-row">
+    @for (p of midfielders; track p.id) {
+      @if (p.isVacant) {
+        <button type="button" class="empty-slot" [class.empty-slot-active]="p.id === selectedId" (click)="onClick(p.id)">
+          <span class="empty-slot-plus">+</span>
+          <span class="empty-slot-label">Pick replacement</span>
+        </button>
+      } @else {
+        <app-player-card
+          [player]="{
+            webName: p.webName,
+            teamShortName: p.teamShortName,
+            priceMillions: p.priceMillions,
+            isCaptain: p.isCaptain,
+            isViceCaptain: p.isViceCaptain,
+            isSelected: p.id === selectedId,
+            isSwapTarget: isSwapTarget(p.id),
+            removable: allowRemove,
+            points: p.points,
+          }"
+          (select)="onClick(p.id)"
+          (remove)="onCardRemove(p.id)"
+        />
+      }
+    }
+  </div>
+  <div class="pitch-row">
+    @for (p of forwards; track p.id) {
+      @if (p.isVacant) {
+        <button type="button" class="empty-slot" [class.empty-slot-active]="p.id === selectedId" (click)="onClick(p.id)">
+          <span class="empty-slot-plus">+</span>
+          <span class="empty-slot-label">Pick replacement</span>
+        </button>
+      } @else {
+        <app-player-card
+          [player]="{
+            webName: p.webName,
+            teamShortName: p.teamShortName,
+            priceMillions: p.priceMillions,
+            isCaptain: p.isCaptain,
+            isViceCaptain: p.isViceCaptain,
+            isSelected: p.id === selectedId,
+            isSwapTarget: isSwapTarget(p.id),
+            removable: allowRemove,
+            points: p.points,
+          }"
+          (select)="onClick(p.id)"
+          (remove)="onCardRemove(p.id)"
+        />
+      }
+    }
+  </div>
+</div>
+
+<div class="bench-area">
+  <div class="bench-label">Bench</div>
+  <div class="pitch-row">
+    @for (p of bench; track p.id) {
+      @if (p.isVacant) {
+        <button type="button" class="empty-slot" [class.empty-slot-active]="p.id === selectedId" (click)="onClick(p.id)">
+          <span class="empty-slot-plus">+</span>
+          <span class="empty-slot-label">Pick replacement</span>
+        </button>
+      } @else {
+        <app-player-card
+          [player]="{
+            webName: p.webName,
+            teamShortName: p.teamShortName,
+            priceMillions: p.priceMillions,
+            isCaptain: p.isCaptain,
+            isViceCaptain: p.isViceCaptain,
+            isSelected: p.id === selectedId,
+            isSwapTarget: isSwapTarget(p.id),
+            removable: allowRemove,
+            points: p.points,
+          }"
+          (select)="onClick(p.id)"
+          (remove)="onCardRemove(p.id)"
+        />
+      }
+    }
+  </div>
+</div>
+
+@if (menuPlayer(); as p) {
+  <app-player-action-menu
+    [player]="p"
+    [allowRemove]="allowRemove"
+    (makeCaptain)="onMakeCaptain()"
+    (makeViceCaptain)="onMakeViceCaptain()"
+    (substitute)="onSubstitute()"
+    (remove)="onRemove()"
+    (close)="closeMenu()"
+  />
+}

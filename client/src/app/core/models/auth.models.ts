@@ -20,10 +20,6 @@ export interface AuthResponse {
   refreshTokenExpiresAt: string;
 }
 
-export interface RefreshTokenRequest {
-  refreshToken: string;
-}
-
 export interface ForgotPasswordRequest {
   email: string;
 }

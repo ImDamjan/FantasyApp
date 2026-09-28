@@ -16,9 +16,6 @@
   border-radius: 18px;
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
   overflow: hidden;
-  /* Forces proper anti-aliased clipping of the rounded corners against the
-     sliding white/purple halves — without this, 1px seams appear at the
-     corners during/after the CSS transform transition. */
   -webkit-mask-image: -webkit-radial-gradient(circle, #fff 100%, #000 100%);
 }
 
@@ -66,12 +63,6 @@
   &:hover {
     color: var(--fa-purple);
   }
-}
-
-.form-error {
-  color: var(--fa-error);
-  font-size: 0.85rem;
-  margin: -0.5rem 0 1rem;
 }
 
 .btn-primary {
@@ -160,7 +151,6 @@
   right: 0;
 }
 
-/* --- Register mode: slide everything --- */
 .auth-card--register {
   .form-panel--login {
     transform: translateX(100%);
@@ -183,7 +173,6 @@
   }
 }
 
-/* --- Mobile: drop the slider effect, stack + simple toggle --- */
 @media (max-width: 720px) {
   .auth-card {
     min-height: 0;

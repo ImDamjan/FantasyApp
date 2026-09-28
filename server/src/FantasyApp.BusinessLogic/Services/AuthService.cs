@@ -19,27 +19,33 @@ namespace FantasyApp.BusinessLogic.Services
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IEmailSender _emailSender;
         private readonly AppSettings _appSettings;
+        private readonly IFantasyTeamRepository _fantasyTeamRepository;
+        private readonly ILeagueRepository _leagueRepository;
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
             ITokenService tokenService,
             IRefreshTokenRepository refreshTokenRepository,
             IEmailSender emailSender,
-            IOptions<AppSettings> appSettings)
+            IOptions<AppSettings> appSettings,
+            IFantasyTeamRepository fantasyTeamRepository,
+            ILeagueRepository leagueRepository)
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _refreshTokenRepository = refreshTokenRepository;
             _emailSender = emailSender;
             _appSettings = appSettings.Value;
+            _fantasyTeamRepository = fantasyTeamRepository;
+            _leagueRepository = leagueRepository;
         }
 
-        public async Task<AuthResult<AuthResponseDto>> RegisterAsync(RegisterRequestDto request)
+        public async Task<ServiceResult<AuthResponseDto>> RegisterAsync(RegisterRequestDto request)
         {
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if (existingUser != null)
             {
-                return AuthResult<AuthResponseDto>.Failure("A user with this email already exists.");
+                return ServiceResult<AuthResponseDto>.Failure("A user with this email already exists.");
             }
 
             var user = new ApplicationUser
@@ -52,37 +58,58 @@ namespace FantasyApp.BusinessLogic.Services
             if (!createResult.Succeeded)
             {
                 var errors = string.Join(" ", createResult.Errors.Select(e => e.Description));
-                return AuthResult<AuthResponseDto>.Failure(errors);
+                return ServiceResult<AuthResponseDto>.Failure(errors);
+            }
+
+            await _fantasyTeamRepository.AddAsync(new FantasyTeam
+            {
+                UserId = user.Id,
+                Name = $"{user.UserName}'s Team",
+                BudgetRemainingTenths = 1000,
+                FreeTransfersAvailable = 1
+            });
+            await _fantasyTeamRepository.SaveChangesAsync();
+
+            var officialLeague = await _leagueRepository.GetOfficialLeagueAsync();
+            if (officialLeague != null)
+            {
+                await _leagueRepository.AddMembershipAsync(new LeagueMembership
+                {
+                    LeagueId = officialLeague.Id,
+                    UserId = user.Id,
+                    JoinedAt = DateTime.UtcNow
+                });
+                await _leagueRepository.SaveChangesAsync();
             }
 
             var authResponse = await IssueTokensAsync(user);
-            return AuthResult<AuthResponseDto>.Success(authResponse);
+            return ServiceResult<AuthResponseDto>.Success(authResponse);
         }
 
-        public async Task<AuthResult<AuthResponseDto>> LoginAsync(LoginRequestDto request)
+        public async Task<ServiceResult<AuthResponseDto>> LoginAsync(LoginRequestDto request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
-                return AuthResult<AuthResponseDto>.Failure("Incorrect email or password.");
+                return ServiceResult<AuthResponseDto>.Failure("Incorrect email or password.");
             }
 
             var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
             if (!passwordValid)
             {
-                return AuthResult<AuthResponseDto>.Failure("Incorrect email or password.");
+                return ServiceResult<AuthResponseDto>.Failure("Incorrect email or password.");
             }
 
             var authResponse = await IssueTokensAsync(user);
-            return AuthResult<AuthResponseDto>.Success(authResponse);
+            return ServiceResult<AuthResponseDto>.Success(authResponse);
         }
 
-        public async Task<AuthResult<AuthResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto request)
+        public async Task<ServiceResult<AuthResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto request)
         {
             var existingToken = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken);
             if (existingToken == null || !existingToken.IsActive || existingToken.User == null)
             {
-                return AuthResult<AuthResponseDto>.Failure("Refresh token is invalid or has expired.");
+                return ServiceResult<AuthResponseDto>.Failure("Refresh token is invalid or has expired.");
             }
 
             var (newRefreshTokenValue, newRefreshTokenExpiresAt) = _tokenService.GenerateRefreshToken();
@@ -114,21 +141,21 @@ namespace FantasyApp.BusinessLogic.Services
                 RefreshTokenExpiresAt = newRefreshTokenExpiresAt
             };
 
-            return AuthResult<AuthResponseDto>.Success(response);
+            return ServiceResult<AuthResponseDto>.Success(response);
         }
 
-        public async Task<AuthResult<bool>> RevokeTokenAsync(RefreshTokenRequestDto request)
+        public async Task<ServiceResult<bool>> RevokeTokenAsync(RefreshTokenRequestDto request)
         {
             var existingToken = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken);
             if (existingToken == null || !existingToken.IsActive)
             {
-                return AuthResult<bool>.Failure("Refresh token is invalid or has already been revoked.");
+                return ServiceResult<bool>.Failure("Refresh token is invalid or has already been revoked.");
             }
 
             existingToken.RevokedAt = DateTime.UtcNow;
             await _refreshTokenRepository.SaveChangesAsync();
 
-            return AuthResult<bool>.Success(true);
+            return ServiceResult<bool>.Success(true);
         }
 
         public async Task ForgotPasswordAsync(ForgotPasswordRequestDto request)
@@ -141,7 +168,7 @@ namespace FantasyApp.BusinessLogic.Services
 
             var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken = Uri.EscapeDataString(resetToken);
-            var resetLink = $"{_appSettings.ClientUrl}/reset-password?email={Uri.EscapeDataString(request.Email)}&token={encodedToken}";
+            var resetLink = $"{_appSettings.ClientUrl}/auth/reset-password?email={Uri.EscapeDataString(request.Email)}&token={encodedToken}";
 
             var htmlBody = $"""
                 <p>Hi {user.UserName},</p>
@@ -153,22 +180,22 @@ namespace FantasyApp.BusinessLogic.Services
             await _emailSender.SendEmailAsync(request.Email, "Reset your password - Fantasy", htmlBody);
         }
 
-        public async Task<AuthResult<bool>> ResetPasswordAsync(ResetPasswordRequestDto request)
+        public async Task<ServiceResult<bool>> ResetPasswordAsync(ResetPasswordRequestDto request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
-                return AuthResult<bool>.Failure("Invalid password reset request.");
+                return ServiceResult<bool>.Failure("Invalid password reset request.");
             }
 
             var result = await _userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
             if (!result.Succeeded)
             {
                 var errors = string.Join(" ", result.Errors.Select(e => e.Description));
-                return AuthResult<bool>.Failure(errors);
+                return ServiceResult<bool>.Failure(errors);
             }
 
-            return AuthResult<bool>.Success(true);
+            return ServiceResult<bool>.Success(true);
         }
 
         private async Task<AuthResponseDto> IssueTokensAsync(ApplicationUser user)

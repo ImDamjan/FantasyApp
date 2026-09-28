@@ -1,0 +1,120 @@
+.pitch {
+  position: relative;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      var(--fa-green) 0,
+      var(--fa-green) 60px,
+      var(--fa-green-dark) 60px,
+      var(--fa-green-dark) 120px
+    );
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  border-radius: 16px;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 1.25rem;
+  min-height: 460px;
+  overflow: hidden;
+}
+
+.pitch-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.halfway-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.55);
+  transform: translateY(-50%);
+}
+
+.centre-circle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 90px;
+  height: 90px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.penalty-box {
+  position: absolute;
+  left: 50%;
+  width: 46%;
+  min-width: 180px;
+  height: 70px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  border-top: none;
+  transform: translateX(-50%);
+}
+
+.penalty-box-top {
+  top: -2px;
+  border-top: none;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.55);
+  border-top-width: 0;
+  height: 56px;
+  border-radius: 0 0 6px 6px;
+}
+
+.penalty-box-bottom {
+  bottom: -2px;
+  border-bottom: none;
+  height: 56px;
+  border-radius: 6px 6px 0 0;
+}
+
+.pitch-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.empty-slot {
+  width: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px dashed rgba(255, 255, 255, 0.55);
+  border-radius: 10px;
+  color: var(--fa-white);
+  cursor: pointer;
+  font-family: inherit;
+  height: 84px;
+  transition: background 0.12s ease, transform 0.12s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+}
+
+.empty-slot-plus {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.empty-slot-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
