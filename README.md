@@ -156,25 +156,57 @@ Za prvu sinhronizaciju je potreban pristup internetu; dok se ona ne završi, lis
 
 ## Pokretanje projekta
 
-Projekat može da se pokrene na Linuxu i na Windowsu. Razlika je uglavnom u načinu pokretanja SQL Servera; koraci za backend i frontend su isti na oba sistema.
+Preduslovi: .NET SDK 8, Node.js 22+, Angular CLI 22 (`npm install -g @angular/cli`), dotnet-ef 8 (`dotnet tool install --global dotnet-ef`).
 
-### Preduslovi
+### Windows
 
-| Alat | Verzija | Napomena |
-| --- | --- | --- |
-| .NET SDK | 8.0 | `dotnet --version` |
-| Node.js | 22 ili noviji | uz npm |
-| Angular CLI | 22 | `npm install -g @angular/cli` |
-| dotnet-ef | 8.x | `dotnet tool install --global dotnet-ef` |
-| SQL Server | 2022 | preko Dockera (Linux i Windows) ili lokalna instalacija (Windows) |
+#### 1. SQL Server
 
-### 1. Pokretanje SQL Servera
+Instalirati [SQL Server 2022 Developer](https://www.microsoft.com/sql-server/sql-server-downloads) (servis *SQL Server (MSSQLSERVER)* se pokreće automatski).
 
-Lozinka za `sa` korisnika mora da ima najmanje 8 znakova, veliko i malo slovo, broj i specijalni znak.
+#### 2. Konfiguracija
 
-#### Opcija A: Linux (Docker)
+U `server/src/FantasyApp.Api/appsettings.Development.json` (nije u gitu):
 
-Na Linux distribucijama poput Fedore SQL Server nema nativnu instalaciju, pa se pokreće u Docker kontejneru:
+```json
+{
+  "ConnectionStrings": { "DefaultConnection": "Server=localhost;Database=FantasyAppDb;Trusted_Connection=True;TrustServerCertificate=True;" },
+  "Jwt": { "Key": "<nasumičan ključ, min. 32 znaka>" },
+  "Smtp": { "Username": "<gmail>", "FromEmail": "<gmail>", "AppPassword": "<gmail-app-password>" }
+}
+```
+
+`Smtp` je potreban samo za email za reset lozinke.
+
+#### 3. Baza
+
+```powershell
+cd server/src/FantasyApp.Api
+dotnet ef database update --project ../FantasyApp.Repository --startup-project .
+```
+
+#### 4. Backend
+
+```powershell
+cd server/src/FantasyApp.Api
+dotnet run --urls "http://localhost:5080"
+```
+
+API: `http://localhost:5080`, Swagger: `http://localhost:5080/swagger`.
+
+#### 5. Frontend
+
+```powershell
+cd client
+npm install
+ng serve --port 4200
+```
+
+Aplikacija: `http://localhost:4200`.
+
+### Linux
+
+#### 1. SQL Server
 
 ```bash
 docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=<lozinka>" \
@@ -182,93 +214,39 @@ docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=<lozinka>" \
   -d mcr.microsoft.com/mssql/server:2022-latest
 ```
 
-Kontejner se posle restarta računara pokreće sam. Ako je zaustavljen, pokreće se komandom `docker start fantasyapp-sqlserver`.
+Lozinka: min. 8 znakova, veliko i malo slovo, broj i specijalni znak.
 
-Connection string:
+#### 2. Konfiguracija
 
-```
-Server=localhost,1433;Database=FantasyAppDb;User Id=sa;Password=<lozinka>;TrustServerCertificate=True;
-```
-
-#### Opcija B: Windows
-
-**Lokalna instalacija** (preporučeno): preuzeti i instalirati [SQL Server 2022 Developer ili Express](https://www.microsoft.com/sql-server/sql-server-downloads). Posle instalacije servis se pokreće automatski (proverava se u aplikaciji *Services*, servis *SQL Server (MSSQLSERVER)* ili *SQL Server (SQLEXPRESS)*). Bazu je zgodno pregledati preko SQL Server Management Studio (SSMS).
-
-Connection string sa Windows autentifikacijom:
-
-```
-# Developer edicija (podrazumevana instanca)
-Server=localhost;Database=FantasyAppDb;Trusted_Connection=True;TrustServerCertificate=True;
-
-# Express edicija
-Server=localhost\SQLEXPRESS;Database=FantasyAppDb;Trusted_Connection=True;TrustServerCertificate=True;
-```
-
-**Docker Desktop**: ako je instaliran Docker Desktop, može se koristiti ista komanda kao na Linuxu (u PowerShell-u se red nastavlja znakom `` ` `` umesto `\`) i isti connection string kao u opciji A:
-
-```powershell
-docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=<lozinka>" `
-  -p 1433:1433 --name fantasyapp-sqlserver --restart unless-stopped `
-  -d mcr.microsoft.com/mssql/server:2022-latest
-```
-
-### 2. Podešavanje backenda
-
-Connection string, JWT ključ i SMTP podaci se ne upisuju u `appsettings.json` (taj fajl je u gitu i sadrži samo prazna polja). Upisuju se u `server/src/FantasyApp.Api/appsettings.Development.json`, koji je u `.gitignore` i ostaje samo lokalno:
+U `server/src/FantasyApp.Api/appsettings.Development.json` (nije u gitu):
 
 ```json
 {
-  "ConnectionStrings": {
-    "DefaultConnection": "<connection string iz koraka 1>"
-  },
-  "Jwt": {
-    "Key": "<nasumičan ključ od najmanje 32 znaka>"
-  },
-  "Smtp": {
-    "Username": "<gmail-adresa>",
-    "FromEmail": "<gmail-adresa>",
-    "AppPassword": "<gmail-app-password>"
-  }
+  "ConnectionStrings": { "DefaultConnection": "Server=localhost,1433;Database=FantasyAppDb;User Id=sa;Password=<lozinka>;TrustServerCertificate=True;" },
+  "Jwt": { "Key": "<nasumičan ključ, min. 32 znaka>" },
+  "Smtp": { "Username": "<gmail>", "FromEmail": "<gmail>", "AppPassword": "<gmail-app-password>" }
 }
 ```
 
-U JSON-u se obrnuta kosa crta piše dvostruko, pa za Express ediciju vrednost glasi `"Server=localhost\\SQLEXPRESS;..."`.
+`Smtp` je potreban samo za email za reset lozinke.
 
-SMTP podaci su potrebni samo za slanje emaila za reset lozinke (Gmail App Password se pravi na Google nalogu: Security, 2-Step Verification, App passwords). Bez njih aplikacija radi normalno, ali slanje emaila neće uspeti.
-
-Ostala podešavanja nisu tajna i nalaze se u `server/src/FantasyApp.Api/appsettings.json`:
-
-| Ključ | Podrazumevano | Opis |
-| --- | --- | --- |
-| `Jwt:Issuer`, `Jwt:Audience` | `FantasyApp`, `FantasyAppClient` | vrednosti u JWT-u |
-| `Jwt:AccessTokenExpirationMinutes` | `15` | trajanje access tokena |
-| `Jwt:RefreshTokenExpirationDays` | `7` | trajanje refresh tokena |
-| `Smtp:Host`, `Smtp:Port` | `smtp.gmail.com`, `587` | SMTP server |
-| `App:ClientUrl` | `http://localhost:4200` | adresa frontenda (koristi se u linku za reset lozinke) |
-| `Fpl:BaseUrl` | `https://fantasy.premierleague.com/api/` | adresa FPL API-ja |
-
-### 3. Kreiranje baze
-
-Migracije se ne primenjuju automatski pri startu, pa se baza kreira ručno (isto na Linuxu i Windowsu):
+#### 3. Baza
 
 ```bash
 cd server/src/FantasyApp.Api
 dotnet ef database update --project ../FantasyApp.Repository --startup-project .
 ```
 
-### 4. Pokretanje backenda
+#### 4. Backend
 
 ```bash
-cd server
-dotnet build
-
-cd src/FantasyApp.Api
+cd server/src/FantasyApp.Api
 dotnet run --urls "http://localhost:5080"
 ```
 
-API radi na `http://localhost:5080`, a Swagger (interaktivna dokumentacija API-ja) na `http://localhost:5080/swagger`. Pri prvom pokretanju API sam napravi ligu "Overall League" i počinje sinhronizaciju sa FPL-om, što traje oko minut.
+API: `http://localhost:5080`, Swagger: `http://localhost:5080/swagger`.
 
-### 5. Pokretanje frontenda
+#### 5. Frontend
 
 ```bash
 cd client
@@ -276,24 +254,7 @@ npm install
 ng serve --port 4200
 ```
 
-Aplikacija je dostupna na `http://localhost:4200`. Frontend očekuje API na `http://localhost:5080/api` (podešeno u `client/src/environments/environment.ts`), a CORS na backendu dozvoljava samo `http://localhost:4200`.
-
-### Korisne komande
-
-```bash
-# nova migracija (iz server/src/FantasyApp.Api)
-dotnet ef migrations add <Naziv> --project ../FantasyApp.Repository --startup-project . --output-dir Migrations
-
-# brisanje baze
-dotnet ef database drop --project ../FantasyApp.Repository --startup-project . --force
-
-# pregled podataka u bazi (Docker)
-docker exec -it fantasyapp-sqlserver /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P '<lozinka>' -C -d FantasyAppDb
-
-# produkcioni build frontenda (rezultat u client/dist/client)
-cd client && ng build
-```
+Aplikacija: `http://localhost:4200`.
 
 ## Struktura foldera
 
