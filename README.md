@@ -166,17 +166,17 @@ Instalirati [SQL Server 2022 Developer](https://www.microsoft.com/sql-server/sql
 
 #### 2. Konfiguracija
 
-U `server/src/FantasyApp.Api/appsettings.Development.json` (nije u gitu):
+Tajne se čuvaju u [User Secrets](https://learn.microsoft.com/aspnet/core/security/app-secrets) (`%APPDATA%\Microsoft\UserSecrets\`, van repozitorijuma):
 
-```json
-{
-  "ConnectionStrings": { "DefaultConnection": "Server=localhost;Database=FantasyAppDb;Trusted_Connection=True;TrustServerCertificate=True;" },
-  "Jwt": { "Key": "<nasumičan ključ, min. 32 znaka>" },
-  "Smtp": { "Username": "<gmail>", "FromEmail": "<gmail>", "AppPassword": "<gmail-app-password>" }
-}
+```powershell
+cd server/src/FantasyApp.Api
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=FantasyAppDb;Trusted_Connection=True;TrustServerCertificate=True;"
+dotnet user-secrets set "Jwt:Key" "<nasumičan ključ, min. 32 znaka>"
+dotnet user-secrets set "Smtp:Username" "<gmail>"
+dotnet user-secrets set "Smtp:FromEmail" "<gmail>"
+dotnet user-secrets set "Smtp:AppPassword" "<gmail-app-password>"
 ```
-
-`Smtp` je potreban samo za email za reset lozinke.
+Provera: `dotnet user-secrets list`.
 
 #### 3. Baza
 
@@ -218,17 +218,18 @@ Lozinka: min. 8 znakova, veliko i malo slovo, broj i specijalni znak.
 
 #### 2. Konfiguracija
 
-U `server/src/FantasyApp.Api/appsettings.Development.json` (nije u gitu):
+Tajne se čuvaju u [User Secrets](https://learn.microsoft.com/aspnet/core/security/app-secrets) (`~/.microsoft/usersecrets/`, van repozitorijuma):
 
-```json
-{
-  "ConnectionStrings": { "DefaultConnection": "Server=localhost,1433;Database=FantasyAppDb;User Id=sa;Password=<lozinka>;TrustServerCertificate=True;" },
-  "Jwt": { "Key": "<nasumičan ključ, min. 32 znaka>" },
-  "Smtp": { "Username": "<gmail>", "FromEmail": "<gmail>", "AppPassword": "<gmail-app-password>" }
-}
+```bash
+cd server/src/FantasyApp.Api
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=FantasyAppDb;User Id=sa;Password=<lozinka>;TrustServerCertificate=True;"
+dotnet user-secrets set "Jwt:Key" "<nasumičan ključ, min. 32 znaka>"
+dotnet user-secrets set "Smtp:Username" "<gmail>"
+dotnet user-secrets set "Smtp:FromEmail" "<gmail>"
+dotnet user-secrets set "Smtp:AppPassword" "<gmail-app-password>"
 ```
 
-`Smtp` je potreban samo za email za reset lozinke.
+Provera: `dotnet user-secrets list`.
 
 #### 3. Baza
 
